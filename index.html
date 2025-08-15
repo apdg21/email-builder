@@ -170,7 +170,7 @@
 
         // Add event listener for canvas width input
         canvasWidthInput.oninput = (e) => {
-            canvasWidth = parseInt(e.target.value);
+            canvasWidth = parseInt(e.target.value) || 600;
             updatePreview();
         };
 
@@ -181,9 +181,8 @@
         function addSection() {
             const type = sectionTypeSelect.value;
             const newSection = {
-                id: Date.now(), // Unique ID for keying
+                id: Date.now(),
                 type: type,
-                // Default content and styles based on the section type
                 content: getDefaultContent(type)
             };
             sections.push(newSection);
@@ -217,7 +216,8 @@
                     return {
                         ...commonStyles,
                         image: 'https://placehold.co/600x150/000000/FFFFFF?text=Logo',
-                        link: '#'
+                        link: '#',
+                        align: 'center'
                     };
                 case 'title-text':
                     return {
@@ -238,7 +238,7 @@
                         fontSize: '16px',
                         textColor: '#333333',
                         textAlign: 'left',
-                        direction: 'text-left', // 'text-left' or 'text-right'
+                        direction: 'text-left',
                         showButton: false,
                         buttonText: 'Click Me',
                         buttonLink: '#',
@@ -283,10 +283,10 @@
 
         function getDefaultBlocks() {
             return {
-                image: {url: 'https://placehold.co/200x200/EEEEEE/808080?text=Image', link: '#'},
+                image: {url: 'https://placehold.co/200x200/EEEEEE/808080?text=Image', link: '#', align: 'center'},
                 title: {text: 'Title', fontSize: '20px', color: '#000000', align: 'center'},
                 text: {text: 'Description text.', fontSize: '14px', color: '#333333', align: 'center'},
-                button: {text: 'Button', link: '#', background: '#007bff', color: '#ffffff', fontSize: '16px'}
+                button: {text: 'Button', link: '#', background: '#007bff', color: '#ffffff', fontSize: '16px', align: 'center'}
             };
         }
 
@@ -296,7 +296,7 @@
                 sections.splice(activeSectionIndex, 1);
                 activeSectionIndex = null;
                 updatePreview();
-                showProperties(); // Hide the properties panel
+                showProperties();
                 updateSectionList();
             }
         }
@@ -359,7 +359,7 @@
             const content = section.content;
 
             // Helper function to create input fields
-            function createInput(label, key, type = 'text', defaultValue = '', options = null) {
+            function createInput(label, key, type = 'text', defaultValue = '', options = null, target = content) {
                 const div = document.createElement('div');
                 div.classList.add('mb-2');
                 const labelEl = document.createElement('label');
@@ -375,7 +375,7 @@
                         const optionEl = document.createElement('option');
                         optionEl.value = opt.value;
                         optionEl.text = opt.label;
-                        if (content[key] === opt.value) optionEl.selected = true;
+                        if (target[key] === opt.value) optionEl.selected = true;
                         inputEl.appendChild(optionEl);
                     });
                 } else {
@@ -383,14 +383,34 @@
                     inputEl.type = type;
                 }
                 inputEl.id = key;
-                inputEl.value = content[key] || defaultValue;
+                inputEl.value = target[key] || defaultValue;
                 inputEl.oninput = (e) => {
                     let value = e.target.value;
                     if (['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'fontSize', 'fontSizeTitle', 'fontSizeText', 'borderWidth', 'borderRadius'].includes(key)) {
                         value = value.match(/^\d+$/) ? `${value}px` : value;
                     }
-                    content[key] = value;
+                    target[key] = value;
                     updatePreview();
+                };
+                inputEl.onblur = (e) => {
+                    let value = e.target.value;
+                    if (['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'fontSize', 'fontSizeTitle', 'fontSizeText', 'borderWidth', 'borderRadius'].includes(key)) {
+                        if (!value.match(/^\d+px$/)) {
+                            value = value.replace(/[^0-9]/g, '');
+                            value = value ? `${value}px` : '0px';
+                            inputEl.value = value;
+                            target[key] = value;
+                            updatePreview();
+                        }
+                    }
+                    if (key.includes('image') || key === 'url') {
+                        if (!value.match(/^(http|https):\/\/[^\s$.?#].[^\s]*$/)) {
+                            showMessage('Please enter a valid image URL');
+                            inputEl.value = target[key] || 'https://placehold.co/600x150/000000/FFFFFF?text=Placeholder';
+                            target[key] = inputEl.value;
+                            updatePreview();
+                        }
+                    }
                 };
                 div.appendChild(labelEl);
                 div.appendChild(inputEl);
@@ -408,7 +428,7 @@
             } else if (content.backgroundType === 'image') {
                 createInput('Background Image URL', 'backgroundImage');
             } else if (content.backgroundType === 'gradient') {
-                createInput('Background Gradient', 'backgroundGradient'); // e.g., linear-gradient(to right, #ff0000, #00ff00)
+                createInput('Background Gradient', 'backgroundGradient');
             }
             createInput('Border Width', 'borderWidth');
             createInput('Border Color', 'borderColor', 'color');
@@ -433,6 +453,11 @@
                 case 'header':
                     createInput('Image URL', 'image');
                     createInput('Link URL', 'link');
+                    createInput('Align', 'align', 'select', 'center', [
+                        {value: 'left', label: 'Left'},
+                        {value: 'center', label: 'Center'},
+                        {value: 'right', label: 'Right'}
+                    ]);
                     break;
                 case 'title-text':
                     createInput('Title', 'title');
@@ -523,7 +548,7 @@
                 inputEl.checked = content[key];
                 inputEl.onchange = (e) => {
                     content[key] = e.target.checked;
-                    showProperties(); // Refresh to show/hide conditional inputs
+                    showProperties();
                     updatePreview();
                 };
                 div.appendChild(labelEl);
@@ -532,7 +557,6 @@
             }
 
             function addBlockProperties(blocksObj, mode, container = propertyInputs) {
-                // For single-column, add order and visibility
                 if (mode === 'single') {
                     const orderSelect = document.createElement('select');
                     orderSelect.multiple = true;
@@ -555,7 +579,6 @@
                     orderDiv.appendChild(orderSelect);
                     container.appendChild(orderDiv);
 
-                    // Visibility checkboxes
                     ['image', 'title', 'text', 'button'].forEach(blockType => {
                         const visDiv = document.createElement('div');
                         visDiv.classList.add('mb-2');
@@ -574,7 +597,6 @@
                     });
                 }
 
-                // Block-specific inputs
                 const blockTypes = ['image', 'title', 'text', 'button'];
                 blockTypes.forEach(blockType => {
                     const block = blocksObj.blocks[blockType];
@@ -584,60 +606,24 @@
                     container.appendChild(blockDiv);
 
                     if (blockType === 'image') {
-                        const imgInput = createInputForBlock('Image URL', 'url', block, blockDiv);
-                        const linkInput = createInputForBlock('Link URL', 'link', block, blockDiv);
+                        createInput('Image URL', 'url', 'text', '', null, block);
+                        createInput('Link URL', 'link', 'text', '', null, block);
+                        createInput('Align', 'align', 'select', 'center', [
+纤维: [{value: 'left', label: 'Left'}, {value: 'center', label: 'Center'}, {value: 'right', label: 'Right'}], block);
                     } else if (blockType === 'title' || blockType === 'text') {
-                        const textInput = createInputForBlock(blockType === 'title' ? 'Title Text' : 'Text', 'text', block, blockDiv, blockType === 'text' ? 'textarea' : 'text');
-                        const sizeInput = createInputForBlock('Font Size', 'fontSize', block, blockDiv);
-                        const colorInput = createInputForBlock('Color', 'color', block, blockDiv, 'color');
-                        const alignSelect = createInputForBlock('Align', 'align', block, blockDiv, 'select', [
-                            {value: 'left', label: 'Left'},
-                            {value: 'center', label: 'Center'},
-                            {value: 'right', label: 'Right'}
-                        ]);
+                        createInput(blockType === 'title' ? 'Title Text' : 'Text', 'text', blockType === 'text' ? 'textarea' : 'text', '', null, block);
+                        createInput('Font Size', 'fontSize', 'text', '', null, block);
+                        createInput('Color', 'color', 'color', '', null, block);
+                        createInput('Align', 'align', 'select', 'center', [{value: 'left', label: 'Left'}, {value: 'center', label: 'Center'}, {value: 'right', label: 'Right'}], block);
                     } else if (blockType === 'button') {
-                        const btnText = createInputForBlock('Button Text', 'text', block, blockDiv);
-                        const btnLink = createInputForBlock('Button Link', 'link', block, blockDiv);
-                        const btnBg = createInputForBlock('Background Color', 'background', block, blockDiv, 'color');
-                        const btnColor = createInputForBlock('Text Color', 'color', block, blockDiv, 'color');
-                        const btnSize = createInputForBlock('Font Size', 'fontSize', block, blockDiv);
+                        createInput('Button Text', 'text', 'text', '', null, block);
+                        createInput('Button Link', 'link', 'text', '', null, block);
+                        createInput('Background Color', 'background', 'color', '', null, block);
+                        createInput('Text Color', 'color', 'color', '', null, block);
+                        createInput('Font Size', 'fontSize', 'text', '', null, block);
+                        createInput('Align', 'align', 'select', 'center', [{value: 'left', label: 'Left'}, {value: 'center', label: 'Center'}, {value: 'right', label: 'Right'}], block);
                     }
                 });
-            }
-
-            function createInputForBlock(label, key, block, container, type = 'text', options = null) {
-                const div = document.createElement('div');
-                div.classList.add('mb-1');
-                const labelEl = document.createElement('label');
-                labelEl.textContent = label;
-                labelEl.classList.add('text-xs');
-                let inputEl;
-                if (type === 'textarea') {
-                    inputEl = document.createElement('textarea');
-                    inputEl.rows = 2;
-                } else if (type === 'select') {
-                    inputEl = document.createElement('select');
-                    options.forEach(opt => {
-                        const optionEl = document.createElement('option');
-                        optionEl.value = opt.value;
-                        optionEl.text = opt.label;
-                        if (block[key] === opt.value) optionEl.selected = true;
-                        inputEl.appendChild(optionEl);
-                    });
-                } else {
-                    inputEl = document.createElement('input');
-                    inputEl.type = type;
-                }
-                inputEl.value = block[key];
-                inputEl.oninput = (e) => {
-                    let value = e.target.value;
-                    if (key === 'fontSize') value = value.match(/^\d+$/) ? `${value}px` : value;
-                    block[key] = value;
-                    updatePreview();
-                };
-                div.appendChild(labelEl);
-                div.appendChild(inputEl);
-                container.appendChild(div);
             }
         }
 
@@ -648,14 +634,14 @@
             const borderStyle = `border: ${content.borderWidth} ${content.borderStyle} ${content.borderColor}; border-radius: ${content.borderRadius};`;
             const paddingStyle = `padding-top: ${content.paddingTop}; padding-bottom: ${content.paddingBottom}; padding-left: ${content.paddingLeft}; padding-right: ${content.paddingRight};`;
             const marginStyle = `margin-top: ${content.marginTop}; margin-bottom: ${content.marginBottom}; margin-left: ${content.marginLeft}; margin-right: ${content.marginRight};`;
-            const tableStyle = `${backgroundStyle} ${borderStyle} ${marginStyle}`;
+            const tableStyle = `width: 100%; max-width: ${canvasWidth}px; min-width: 0; ${backgroundStyle} ${borderStyle} ${marginStyle}`;
 
             switch (section.type) {
                 case 'header':
                     return `
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="${tableStyle}" role="presentation">
+                        <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
                             <tr>
-                                <td style="${paddingStyle}">
+                                <td align="${content.align}" style="${paddingStyle}">
                                     <a href="${content.link}" target="_blank">
                                         <img src="${content.image}" alt="Header" style="display: block; width: 100%; max-width: ${canvasWidth}px; height: auto; border-radius: ${content.borderRadius};" />
                                     </a>
@@ -665,7 +651,7 @@
                     `;
                 case 'title-text':
                     return `
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="${tableStyle}" role="presentation">
+                        <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
                             <tr>
                                 <td align="${content.textAlign}" style="${paddingStyle}">
                                     <h1 style="font-size: ${content.fontSizeTitle}; color: ${content.textColorTitle}; margin: 0;">${content.title}</h1>
@@ -697,7 +683,7 @@
                         <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${canvasWidth/2}px;" role="presentation">
                             <tr>
                                 <td style="${paddingStyle}">
-                                    <img src="${content.image}" alt="Image" style="display: block; width: 100%; height: auto;">
+                                    <img src="${content.image}" alt="Image" style="display: block; width: 100%; max-width: ${canvasWidth/2}px; height: auto;">
                                 </td>
                             </tr>
                         </table>
@@ -706,7 +692,7 @@
                     const rightColumn = content.direction === 'text-left' ? imageColumn : textColumn;
                     return `
                         <!--[if mso]>
-                        <table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" style="${tableStyle}" role="presentation">
+                        <table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" align="center" style="${tableStyle}" role="presentation">
                             <tr>
                                 <td style="width: ${canvasWidth/2}px;">
                         <![endif]-->
@@ -724,7 +710,7 @@
                     `;
                 case 'hero':
                     return `
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="${tableStyle} background-image: url(${content.backgroundImage}); background-size: cover; background-position: center;" role="presentation">
+                        <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle} background-image: url(${content.backgroundImage}); background-size: cover; background-position: center;" role="presentation">
                             <tr>
                                 <td style="${paddingStyle} text-align: ${content.overlayAlign}; color: ${content.overlayTextColor};">
                                     <h1 style="font-size: 32px; margin: 0;">${content.overlayTitle}</h1>
@@ -745,7 +731,7 @@
                 case 'single-column-blocks':
                     const blocksHtml = content.order.filter(type => content.visible[type]).map(type => generateBlockHtml(content.blocks[type], type)).join('');
                     return `
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="${tableStyle}" role="presentation">
+                        <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
                             <tr>
                                 <td style="${paddingStyle}">
                                     ${blocksHtml}
@@ -764,21 +750,39 @@
             switch (type) {
                 case 'image':
                     return `
-                        <a href="${block.link}" target="_blank">
-                            <img src="${block.url}" alt="Image" style="display: block; width: 100%; height: auto; margin-bottom: 10px;">
-                        </a>
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="${block.align}" style="margin-bottom: 10px;">
+                            <tr>
+                                <td>
+                                    <a href="${block.link}" target="_blank">
+                                        <img src="${block.url}" alt="Image" style="display: block; width: 100%; max-width: ${canvasWidth}px; height: auto;">
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
                     `;
                 case 'title':
                     return `
-                        <h2 style="font-size: ${block.fontSize}; color: ${block.color}; text-align: ${block.align}; margin: 0 0 10px 0;">${block.text}</h2>
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="${block.align}" style="margin-bottom: 10px;">
+                            <tr>
+                                <td style="font-size: ${block.fontSize}; color: ${block.color}; text-align: ${block.align};">
+                                    <h2 style="margin: 0;">${block.text}</h2>
+                                </td>
+                            </tr>
+                        </table>
                     `;
                 case 'text':
                     return `
-                        <p style="font-size: ${block.fontSize}; color: ${block.color}; text-align: ${block.align}; margin: 0 0 10px 0; line-height: 1.5;">${block.text}</p>
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="${block.align}" style="margin-bottom: 10px;">
+                            <tr>
+                                <td style="font-size: ${block.fontSize}; color: ${block.color}; text-align: ${block.align};">
+                                    <p style="margin: 0; line-height: 1.5;">${block.text}</p>
+                                </td>
+                            </tr>
+                        </table>
                     `;
                 case 'button':
                     return `
-                        <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 10px auto;">
+                        <table cellpadding="0" cellspacing="0" border="0" align="${block.align}" style="margin-bottom: 10px;">
                             <tr>
                                 <td style="background-color: ${block.background}; border-radius: 4px;">
                                     <a href="${block.link}" target="_blank" style="font-size: ${block.fontSize}; color: ${block.color}; padding: 10px 20px; display: block; text-decoration: none; text-align: center;">${block.text}</a>
@@ -792,7 +796,7 @@
         function generateMultiColumnHtml(content, numColumns) {
             const columnWidth = Math.floor(canvasWidth / numColumns);
             let columnsHtml = '';
-            let msoHtml = `[if mso]<table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr>`;
+            let msoHtml = `[if mso]<table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" align="center" role="presentation"><tr>`;
             content.columns.forEach((col, index) => {
                 const blocksHtml = Object.keys(col.blocks).map(type => generateBlockHtml(col.blocks[type], type)).join('');
                 columnsHtml += `
@@ -801,7 +805,7 @@
                     <![endif]-->
                     <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${columnWidth}px; display: inline-block; vertical-align: top;" role="presentation">
                         <tr>
-                            <td style="padding: 10px; text-align: center;">
+                            <td style="padding: 10px;">
                                 ${blocksHtml}
                             </td>
                         </tr>
@@ -810,8 +814,9 @@
                 msoHtml += `<td style="width: ${columnWidth}px;"></td>`;
             });
             msoHtml += `</tr></table><![endif]>`;
+            const tableStyle = `width: 100%; max-width: ${canvasWidth}px; min-width: 0; ${getBackgroundStyle(content)}`;
             return `
-                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="${getBackgroundStyle(content)}" role="presentation">
+                <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
                     <tr>
                         <td>
                             ${msoHtml.replace(/<\/td><td/g, '</td><td')} 
@@ -861,6 +866,7 @@
         .container {
             width: 100%;
             max-width: ${canvasWidth}px;
+            min-width: 0;
             margin: 0 auto;
             background-color: #ffffff;
         }
@@ -877,6 +883,7 @@
         @media only screen and (max-width: ${canvasWidth}px) {
             .container {
                 width: 100% !important;
+                max-width: 100% !important;
             }
             .column {
                 display: block !important;
@@ -885,13 +892,16 @@
             }
             img {
                 width: 100% !important;
+                max-width: 100% !important;
             }
         }
     </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f6f6f6;">
     <center style="width: 100%; background-color: #f6f6f6;">
-        <table class="container" cellpadding="0" cellspacing="0" border="0" role="presentation">
+        <table class "
+
+container" cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="width: 100%; max-width: ${canvasWidth}px; min-width: 0; background-color: #ffffff;" role="presentation">
             ${sectionsHtml}
         </table>
     </center>
