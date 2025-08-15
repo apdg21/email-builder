@@ -159,14 +159,14 @@
         let canvasWidth = 600;
 
         // Get DOM elements
-        let previewFrame = document.getElementById('preview-frame');
-        let propertiesPanel = document.getElementById('properties-panel');
-        let propertyInputs = document.getElementById('property-inputs');
-        let codeOutput = document.getElementById('code-output');
-        let sectionListContainer = document.getElementById('section-list-container');
-        let sectionTypeSelect = document.getElementById('section-type-select');
-        let messageBox = document.getElementById('message-box');
-        let canvasWidthInput = document.getElementById('canvas-width');
+        const previewFrame = document.getElementById('preview-frame');
+        const propertiesPanel = document.getElementById('properties-panel');
+        const propertyInputs = document.getElementById('property-inputs');
+        const codeOutput = document.getElementById('code-output');
+        const sectionListContainer = document.getElementById('section-list-container');
+        const sectionTypeSelect = document.getElementById('section-type-select');
+        const messageBox = document.getElementById('message-box');
+        const canvasWidthInput = document.getElementById('canvas-width');
 
         // Add event listener for canvas width input
         canvasWidthInput.oninput = (e) => {
@@ -179,17 +179,28 @@
 
         // Function to add a new section
         function addSection() {
-            const type = sectionTypeSelect.value;
-            const newSection = {
-                id: Date.now(),
-                type: type,
-                content: getDefaultContent(type)
-            };
-            sections.push(newSection);
-            activeSectionIndex = sections.length - 1;
-            updatePreview();
-            showProperties();
-            updateSectionList();
+            try {
+                const type = sectionTypeSelect.value;
+                if (!type) {
+                    showMessage('Error: No section type selected');
+                    return;
+                }
+                const newSection = {
+                    id: Date.now(),
+                    type: type,
+                    content: getDefaultContent(type)
+                };
+                sections.push(newSection);
+                activeSectionIndex = sections.length - 1;
+                console.log('Added section:', newSection); // Debug log
+                updateSectionList();
+                showProperties();
+                updatePreview();
+                showMessage(`Added ${type.replace(/-/g, ' ')} section`);
+            } catch (error) {
+                console.error('Error adding section:', error);
+                showMessage('Error adding section: ' + error.message);
+            }
         }
 
         function getDefaultContent(type) {
@@ -278,6 +289,8 @@
                         ...commonStyles,
                         columns: [getDefaultBlocks(), getDefaultBlocks(), getDefaultBlocks()]
                     };
+                default:
+                    throw new Error(`Unknown section type: ${type}`);
             }
         }
 
@@ -292,557 +305,606 @@
 
         // Function to remove the currently active section
         function removeSection() {
-            if (activeSectionIndex !== null && confirm('Are you sure you want to remove this section?')) {
-                sections.splice(activeSectionIndex, 1);
-                activeSectionIndex = null;
-                updatePreview();
-                showProperties();
-                updateSectionList();
+            try {
+                if (activeSectionIndex !== null && confirm('Are you sure you want to remove this section?')) {
+                    sections.splice(activeSectionIndex, 1);
+                    activeSectionIndex = null;
+                    updateSectionList();
+                    showProperties();
+                    updatePreview();
+                    showMessage('Section removed');
+                }
+            } catch (error) {
+                console.error('Error removing section:', error);
+                showMessage('Error removing section: ' + error.message);
             }
         }
 
         // Update the list of sections on the left
         function updateSectionList() {
-            sectionListContainer.innerHTML = '';
-            if (sections.length === 0) {
-                sectionListContainer.innerHTML = '<div class="text-center text-gray-400 p-4">Add a section to get started</div>';
-            } else {
-                sections.forEach((section, index) => {
-                    const sectionName = section.type.replace(/-/g, ' ').split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-                    const sectionItem = document.createElement('div');
-                    sectionItem.classList.add('section-item', 'p-3', 'rounded-lg', 'flex', 'items-center', 'justify-between');
-                    sectionItem.draggable = true;
-                    if (index === activeSectionIndex) {
-                        sectionItem.classList.add('active');
-                    }
-                    sectionItem.innerHTML = `
-                        <span class="font-medium text-gray-700">${sectionName}</span>
-                        <span class="draggable-handle text-gray-400">☰</span>
-                    `;
-                    sectionItem.ondragstart = (e) => {
-                        e.dataTransfer.setData('text/plain', index);
-                    };
-                    sectionItem.ondragover = (e) => e.preventDefault();
-                    sectionItem.ondrop = (e) => {
-                        e.preventDefault();
-                        const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                        const dropIndex = index;
-                        if (draggedIndex !== dropIndex) {
-                            const [draggedSection] = sections.splice(draggedIndex, 1);
-                            sections.splice(dropIndex, 0, draggedSection);
-                            activeSectionIndex = dropIndex;
+            try {
+                sectionListContainer.innerHTML = '';
+                if (sections.length === 0) {
+                    sectionListContainer.innerHTML = '<div class="text-center text-gray-400 p-4">Add a section to get started</div>';
+                } else {
+                    sections.forEach((section, index) => {
+                        const sectionName = section.type.replace(/-/g, ' ').split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+                        const sectionItem = document.createElement('div');
+                        sectionItem.classList.add('section-item', 'p-3', 'rounded-lg', 'flex', 'items-center', 'justify-between');
+                        sectionItem.draggable = true;
+                        if (index === activeSectionIndex) {
+                            sectionItem.classList.add('active');
+                        }
+                        sectionItem.innerHTML = `
+                            <span class="font-medium text-gray-700">${sectionName}</span>
+                            <span class="draggable-handle text-gray-400">☰</span>
+                        `;
+                        sectionItem.ondragstart = (e) => {
+                            e.dataTransfer.setData('text/plain', index);
+                        };
+                        sectionItem.ondragover = (e) => e.preventDefault();
+                        sectionItem.ondrop = (e) => {
+                            e.preventDefault();
+                            const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                            const dropIndex = index;
+                            if (draggedIndex !== dropIndex) {
+                                const [draggedSection] = sections.splice(draggedIndex, 1);
+                                sections.splice(dropIndex, 0, draggedSection);
+                                activeSectionIndex = dropIndex;
+                                updateSectionList();
+                                updatePreview();
+                                showProperties();
+                            }
+                        };
+                        sectionItem.onclick = () => {
+                            activeSectionIndex = index;
+                            showProperties();
                             updateSectionList();
                             updatePreview();
-                            showProperties();
-                        }
-                    };
-                    sectionItem.onclick = () => {
-                        activeSectionIndex = index;
-                        showProperties();
-                        updateSectionList();
-                    };
-                    sectionListContainer.appendChild(sectionItem);
-                });
+                        };
+                        sectionListContainer.appendChild(sectionItem);
+                    });
+                }
+            } catch (error) {
+                console.error('Error updating section list:', error);
+                showMessage('Error updating section list: ' + error.message);
             }
         }
 
         // Function to show the properties of the active section
         function showProperties() {
-            if (activeSectionIndex === null) {
-                propertiesPanel.classList.add('hidden');
-                return;
-            }
-
-            propertiesPanel.classList.remove('hidden');
-            propertyInputs.innerHTML = '';
-            const section = sections[activeSectionIndex];
-            const content = section.content;
-
-            // Helper function to create input fields
-            function createInput(label, key, type = 'text', defaultValue = '', options = null, target = content) {
-                const div = document.createElement('div');
-                div.classList.add('mb-2');
-                const labelEl = document.createElement('label');
-                labelEl.textContent = label;
-                labelEl.htmlFor = key;
-                let inputEl;
-                if (type === 'textarea') {
-                    inputEl = document.createElement('textarea');
-                    inputEl.rows = 4;
-                } else if (type === 'select') {
-                    inputEl = document.createElement('select');
-                    options.forEach(opt => {
-                        const optionEl = document.createElement('option');
-                        optionEl.value = opt.value;
-                        optionEl.text = opt.label;
-                        if (target[key] === opt.value) optionEl.selected = true;
-                        inputEl.appendChild(optionEl);
-                    });
-                } else {
-                    inputEl = document.createElement('input');
-                    inputEl.type = type;
+            try {
+                if (activeSectionIndex === null) {
+                    propertiesPanel.classList.add('hidden');
+                    return;
                 }
-                inputEl.id = key;
-                inputEl.value = target[key] || defaultValue;
-                inputEl.oninput = (e) => {
-                    let value = e.target.value;
-                    if (['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'fontSize', 'fontSizeTitle', 'fontSizeText', 'borderWidth', 'borderRadius'].includes(key)) {
-                        value = value.match(/^\d+$/) ? `${value}px` : value;
+
+                propertiesPanel.classList.remove('hidden');
+                propertyInputs.innerHTML = '';
+                const section = sections[activeSectionIndex];
+                const content = section.content;
+
+                // Helper function to create input fields
+                function createInput(label, key, type = 'text', defaultValue = '', options = null, target = content) {
+                    const div = document.createElement('div');
+                    div.classList.add('mb-2');
+                    const labelEl = document.createElement('label');
+                    labelEl.textContent = label;
+                    labelEl.htmlFor = key;
+                    let inputEl;
+                    if (type === 'textarea') {
+                        inputEl = document.createElement('textarea');
+                        inputEl.rows = 4;
+                    } else if (type === 'select') {
+                        inputEl = document.createElement('select');
+                        options.forEach(opt => {
+                            const optionEl = document.createElement('option');
+                            optionEl.value = opt.value;
+                            optionEl.text = opt.label;
+                            if (target[key] === opt.value) optionEl.selected = true;
+                            inputEl.appendChild(optionEl);
+                        });
+                    } else {
+                        inputEl = document.createElement('input');
+                        inputEl.type = type;
                     }
-                    target[key] = value;
-                    updatePreview();
-                };
-                inputEl.onblur = (e) => {
-                    let value = e.target.value;
-                    if (['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'fontSize', 'fontSizeTitle', 'fontSizeText', 'borderWidth', 'borderRadius'].includes(key)) {
-                        if (!value.match(/^\d+px$/)) {
-                            value = value.replace(/[^0-9]/g, '');
-                            value = value ? `${value}px` : '0px';
-                            inputEl.value = value;
-                            target[key] = value;
-                            updatePreview();
+                    inputEl.id = key;
+                    inputEl.value = target[key] || defaultValue;
+                    inputEl.oninput = (e) => {
+                        let value = e.target.value;
+                        if (['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'fontSize', 'fontSizeTitle', 'fontSizeText', 'borderWidth', 'borderRadius'].includes(key)) {
+                            value = value.match(/^\d+$/) ? `${value}px` : value;
                         }
-                    }
-                    if (key.includes('image') || key === 'url') {
-                        if (!value.match(/^(http|https):\/\/[^\s$.?#].[^\s]*$/)) {
-                            showMessage('Please enter a valid image URL');
-                            inputEl.value = target[key] || 'https://placehold.co/600x150/000000/FFFFFF?text=Placeholder';
-                            target[key] = inputEl.value;
-                            updatePreview();
-                        }
-                    }
-                };
-                div.appendChild(labelEl);
-                div.appendChild(inputEl);
-                propertyInputs.appendChild(div);
-            }
-
-            // Common styles inputs
-            createInput('Background Type', 'backgroundType', 'select', 'color', [
-                {value: 'color', label: 'Color'},
-                {value: 'image', label: 'Image'},
-                {value: 'gradient', label: 'Gradient'}
-            ]);
-            if (content.backgroundType === 'color') {
-                createInput('Background Color', 'backgroundColor', 'color');
-            } else if (content.backgroundType === 'image') {
-                createInput('Background Image URL', 'backgroundImage');
-            } else if (content.backgroundType === 'gradient') {
-                createInput('Background Gradient', 'backgroundGradient');
-            }
-            createInput('Border Width', 'borderWidth');
-            createInput('Border Color', 'borderColor', 'color');
-            createInput('Border Style', 'borderStyle', 'select', 'solid', [
-                {value: 'solid', label: 'Solid'},
-                {value: 'dashed', label: 'Dashed'},
-                {value: 'dotted', label: 'Dotted'},
-                {value: 'none', label: 'None'}
-            ]);
-            createInput('Border Radius', 'borderRadius');
-            createInput('Padding Top', 'paddingTop');
-            createInput('Padding Bottom', 'paddingBottom');
-            createInput('Padding Left', 'paddingLeft');
-            createInput('Padding Right', 'paddingRight');
-            createInput('Margin Top', 'marginTop');
-            createInput('Margin Bottom', 'marginBottom');
-            createInput('Margin Left', 'marginLeft');
-            createInput('Margin Right', 'marginRight');
-
-            // Type-specific inputs
-            switch (section.type) {
-                case 'header':
-                    createInput('Image URL', 'image');
-                    createInput('Link URL', 'link');
-                    createInput('Align', 'align', 'select', 'center', [
-                        {value: 'left', label: 'Left'},
-                        {value: 'center', label: 'Center'},
-                        {value: 'right', label: 'Right'}
-                    ]);
-                    break;
-                case 'title-text':
-                    createInput('Title', 'title');
-                    createInput('Text', 'text', 'textarea');
-                    createInput('Title Font Size', 'fontSizeTitle');
-                    createInput('Text Font Size', 'fontSizeText');
-                    createInput('Title Color', 'textColorTitle', 'color');
-                    createInput('Text Color', 'textColorText', 'color');
-                    createInput('Text Align', 'textAlign', 'select', 'center', [
-                        {value: 'left', label: 'Left'},
-                        {value: 'center', label: 'Center'},
-                        {value: 'right', label: 'Right'}
-                    ]);
-                    break;
-                case 'text-image':
-                    createInput('Image URL', 'image');
-                    createInput('Text', 'text', 'textarea');
-                    createInput('Text Font Size', 'fontSize');
-                    createInput('Text Color', 'textColor', 'color');
-                    createInput('Text Align', 'textAlign', 'select', 'left', [
-                        {value: 'left', label: 'Left'},
-                        {value: 'center', label: 'Center'},
-                        {value: 'right', label: 'Right'}
-                    ]);
-                    createInput('Direction', 'direction', 'select', 'text-left', [
-                        {value: 'text-left', label: 'Text Left, Image Right'},
-                        {value: 'text-right', label: 'Text Right, Image Left'}
-                    ]);
-                    createCheckbox('Show Button', 'showButton');
-                    if (content.showButton) {
-                        createInput('Button Text', 'buttonText');
-                        createInput('Button Link', 'buttonLink');
-                        createInput('Button Background', 'buttonBackground', 'color');
-                        createInput('Button Color', 'buttonColor', 'color');
-                        createInput('Button Font Size', 'buttonFontSize');
-                    }
-                    break;
-                case 'hero':
-                    if (content.backgroundType === 'image') {
-                        createInput('Background Image URL', 'backgroundImage');
-                    }
-                    createInput('Overlay Title', 'overlayTitle');
-                    createInput('Overlay Text', 'overlayText', 'textarea');
-                    createInput('Overlay Text Color', 'overlayTextColor', 'color');
-                    createInput('Overlay Align', 'overlayAlign', 'select', 'center', [
-                        {value: 'left', label: 'Left'},
-                        {value: 'center', label: 'Center'},
-                        {value: 'right', label: 'Right'}
-                    ]);
-                    createCheckbox('Show Overlay Button', 'showOverlayButton');
-                    if (content.showOverlayButton) {
-                        createInput('Overlay Button Text', 'overlayButtonText');
-                        createInput('Overlay Button Link', 'overlayButtonLink');
-                        createInput('Overlay Button Background', 'overlayButtonBackground', 'color');
-                        createInput('Overlay Button Color', 'overlayButtonColor', 'color');
-                    }
-                    break;
-                case 'single-column-blocks':
-                    addBlockProperties(content, 'single');
-                    break;
-                case 'two-column-blocks':
-                    content.columns.forEach((col, colIndex) => {
-                        const colDiv = document.createElement('div');
-                        colDiv.classList.add('mt-4', 'p-2', 'border', 'border-gray-300', 'rounded');
-                        colDiv.innerHTML = `<h3>Column ${colIndex + 1}</h3>`;
-                        propertyInputs.appendChild(colDiv);
-                        addBlockProperties(col, 'multi', colDiv);
-                    });
-                    break;
-                case 'three-column-blocks':
-                    content.columns.forEach((col, colIndex) => {
-                        const colDiv = document.createElement('div');
-                        colDiv.classList.add('mt-4', 'p-2', 'border', 'border-gray-300', 'rounded');
-                        colDiv.innerHTML = `<h3>Column ${colIndex + 1}</h3>`;
-                        propertyInputs.appendChild(colDiv);
-                        addBlockProperties(col, 'multi', colDiv);
-                    });
-                    break;
-            }
-
-            function createCheckbox(label, key) {
-                const div = document.createElement('div');
-                div.classList.add('mb-2');
-                const labelEl = document.createElement('label');
-                labelEl.textContent = label;
-                const inputEl = document.createElement('input');
-                inputEl.type = 'checkbox';
-                inputEl.checked = content[key];
-                inputEl.onchange = (e) => {
-                    content[key] = e.target.checked;
-                    showProperties();
-                    updatePreview();
-                };
-                div.appendChild(labelEl);
-                div.appendChild(inputEl);
-                propertyInputs.appendChild(div);
-            }
-
-            function addBlockProperties(blocksObj, mode, container = propertyInputs) {
-                if (mode === 'single') {
-                    const orderSelect = document.createElement('select');
-                    orderSelect.multiple = true;
-                    ['image', 'title', 'text', 'button'].forEach(blockType => {
-                        const opt = document.createElement('option');
-                        opt.value = blockType;
-                        opt.text = blockType.charAt(0).toUpperCase() + blockType.slice(1);
-                        opt.selected = content.order.includes(blockType);
-                        orderSelect.appendChild(opt);
-                    });
-                    orderSelect.onchange = () => {
-                        content.order = Array.from(orderSelect.selectedOptions).map(opt => opt.value);
+                        target[key] = value;
                         updatePreview();
                     };
-                    const orderDiv = document.createElement('div');
-                    orderDiv.classList.add('mb-2');
-                    const orderLabel = document.createElement('label');
-                    orderLabel.textContent = 'Block Order (multi-select and drag to reorder)';
-                    orderDiv.appendChild(orderLabel);
-                    orderDiv.appendChild(orderSelect);
-                    container.appendChild(orderDiv);
-
-                    ['image', 'title', 'text', 'button'].forEach(blockType => {
-                        const visDiv = document.createElement('div');
-                        visDiv.classList.add('mb-2');
-                        const visLabel = document.createElement('label');
-                        visLabel.textContent = `Show ${blockType.charAt(0).toUpperCase() + blockType.slice(1)}`;
-                        const visInput = document.createElement('input');
-                        visInput.type = 'checkbox';
-                        visInput.checked = content.visible[blockType];
-                        visInput.onchange = (e) => {
-                            content.visible[blockType] = e.target.checked;
-                            updatePreview();
-                        };
-                        visDiv.appendChild(visLabel);
-                        visDiv.appendChild(visInput);
-                        container.appendChild(visDiv);
-                    });
+                    inputEl.onblur = (e) => {
+                        let value = e.target.value;
+                        if (['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'fontSize', 'fontSizeTitle', 'fontSizeText', 'borderWidth', 'borderRadius'].includes(key)) {
+                            if (!value.match(/^\d+px$/)) {
+                                value = value.replace(/[^0-9]/g, '');
+                                value = value ? `${value}px` : '0px';
+                                inputEl.value = value;
+                                target[key] = value;
+                                updatePreview();
+                            }
+                        }
+                        if (key.includes('image') || key === 'url') {
+                            if (!value.match(/^(http|https):\/\/[^\s$.?#].[^\s]*$/)) {
+                                showMessage('Please enter a valid image URL');
+                                inputEl.value = target[key] || 'https://placehold.co/600x150/000000/FFFFFF?text=Placeholder';
+                                target[key] = inputEl.value;
+                                updatePreview();
+                            }
+                        }
+                    };
+                    div.appendChild(labelEl);
+                    div.appendChild(inputEl);
+                    propertyInputs.appendChild(div);
                 }
 
-                const blockTypes = ['image', 'title', 'text', 'button'];
-                blockTypes.forEach(blockType => {
-                    const block = blocksObj.blocks[blockType];
-                    const blockDiv = document.createElement('div');
-                    blockDiv.classList.add('mt-2', 'p-2', 'bg-gray-100', 'rounded');
-                    blockDiv.innerHTML = `<h4>${blockType.charAt(0).toUpperCase() + blockType.slice(1)} Block</h4>`;
-                    container.appendChild(blockDiv);
+                // Common styles inputs
+                createInput('Background Type', 'backgroundType', 'select', 'color', [
+                    {value: 'color', label: 'Color'},
+                    {value: 'image', label: 'Image'},
+                    {value: 'gradient', label: 'Gradient'}
+                ]);
+                if (content.backgroundType === 'color') {
+                    createInput('Background Color', 'backgroundColor', 'color');
+                } else if (content.backgroundType === 'image') {
+                    createInput('Background Image URL', 'backgroundImage');
+                } else if (content.backgroundType === 'gradient') {
+                    createInput('Background Gradient', 'backgroundGradient');
+                }
+                createInput('Border Width', 'borderWidth');
+                createInput('Border Color', 'borderColor', 'color');
+                createInput('Border Style', 'borderStyle', 'select', 'solid', [
+                    {value: 'solid', label: 'Solid'},
+                    {value: 'dashed', label: 'Dashed'},
+                    {value: 'dotted', label: 'Dotted'},
+                    {value: 'none', label: 'None'}
+                ]);
+                createInput('Border Radius', 'borderRadius');
+                createInput('Padding Top', 'paddingTop');
+                createInput('Padding Bottom', 'paddingBottom');
+                createInput('Padding Left', 'paddingLeft');
+                createInput('Padding Right', 'paddingRight');
+                createInput('Margin Top', 'marginTop');
+                createInput('Margin Bottom', 'marginBottom');
+                createInput('Margin Left', 'marginLeft');
+                createInput('Margin Right', 'marginRight');
 
-                    if (blockType === 'image') {
-                        createInput('Image URL', 'url', 'text', '', null, block);
-                        createInput('Link URL', 'link', 'text', '', null, block);
+                // Type-specific inputs
+                switch (section.type) {
+                    case 'header':
+                        createInput('Image URL', 'image');
+                        createInput('Link URL', 'link');
                         createInput('Align', 'align', 'select', 'center', [
-纤维: [{value: 'left', label: 'Left'}, {value: 'center', label: 'Center'}, {value: 'right', label: 'Right'}], block);
-                    } else if (blockType === 'title' || blockType === 'text') {
-                        createInput(blockType === 'title' ? 'Title Text' : 'Text', 'text', blockType === 'text' ? 'textarea' : 'text', '', null, block);
-                        createInput('Font Size', 'fontSize', 'text', '', null, block);
-                        createInput('Color', 'color', 'color', '', null, block);
-                        createInput('Align', 'align', 'select', 'center', [{value: 'left', label: 'Left'}, {value: 'center', label: 'Center'}, {value: 'right', label: 'Right'}], block);
-                    } else if (blockType === 'button') {
-                        createInput('Button Text', 'text', 'text', '', null, block);
-                        createInput('Button Link', 'link', 'text', '', null, block);
-                        createInput('Background Color', 'background', 'color', '', null, block);
-                        createInput('Text Color', 'color', 'color', '', null, block);
-                        createInput('Font Size', 'fontSize', 'text', '', null, block);
-                        createInput('Align', 'align', 'select', 'center', [{value: 'left', label: 'Left'}, {value: 'center', label: 'Center'}, {value: 'right', label: 'Right'}], block);
+                            {value: 'left', label: 'Left'},
+                            {value: 'center', label: 'Center'},
+                            {value: 'right', label: 'Right'}
+                        ]);
+                        break;
+                    case 'title-text':
+                        createInput('Title', 'title');
+                        createInput('Text', 'text', 'textarea');
+                        createInput('Title Font Size', 'fontSizeTitle');
+                        createInput('Text Font Size', 'fontSizeText');
+                        createInput('Title Color', 'textColorTitle', 'color');
+                        createInput('Text Color', 'textColorText', 'color');
+                        createInput('Text Align', 'textAlign', 'select', 'center', [
+                            {value: 'left', label: 'Left'},
+                            {value: 'center', label: 'Center'},
+                            {value: 'right', label: 'Right'}
+                        ]);
+                        break;
+                    case 'text-image':
+                        createInput('Image URL', 'image');
+                        createInput('Text', 'text', 'textarea');
+                        createInput('Text Font Size', 'fontSize');
+                        createInput('Text Color', 'textColor', 'color');
+                        createInput('Text Align', 'textAlign', 'select', 'left', [
+                            {value: 'left', label: 'Left'},
+                            {value: 'center', label: 'Center'},
+                            {value: 'right', label: 'Right'}
+                        ]);
+                        createInput('Direction', 'direction', 'select', 'text-left', [
+                            {value: 'text-left', label: 'Text Left, Image Right'},
+                            {value: 'text-right', label: 'Text Right, Image Left'}
+                        ]);
+                        createCheckbox('Show Button', 'showButton');
+                        if (content.showButton) {
+                            createInput('Button Text', 'buttonText');
+                            createInput('Button Link', 'buttonLink');
+                            createInput('Button Background', 'buttonBackground', 'color');
+                            createInput('Button Color', 'buttonColor', 'color');
+                            createInput('Button Font Size', 'buttonFontSize');
+                        }
+                        break;
+                    case 'hero':
+                        if (content.backgroundType === 'image') {
+                            createInput('Background Image URL', 'backgroundImage');
+                        }
+                        createInput('Overlay Title', 'overlayTitle');
+                        createInput('Overlay Text', 'overlayText', 'textarea');
+                        createInput('Overlay Text Color', 'overlayTextColor', 'color');
+                        createInput('Overlay Align', 'overlayAlign', 'select', 'center', [
+                            {value: 'left', label: 'Left'},
+                            {value: 'center', label: 'Center'},
+                            {value: 'right', label: 'Right'}
+                        ]);
+                        createCheckbox('Show Overlay Button', 'showOverlayButton');
+                        if (content.showOverlayButton) {
+                            createInput('Overlay Button Text', 'overlayButtonText');
+                            createInput('Overlay Button Link', 'overlayButtonLink');
+                            createInput('Overlay Button Background', 'overlayButtonBackground', 'color');
+                            createInput('Overlay Button Color', 'overlayButtonColor', 'color');
+                        }
+                        break;
+                    case 'single-column-blocks':
+                        addBlockProperties(content, 'single');
+                        break;
+                    case 'two-column-blocks':
+                        content.columns.forEach((col, colIndex) => {
+                            const colDiv = document.createElement('div');
+                            colDiv.classList.add('mt-4', 'p-2', 'border', 'border-gray-300', 'rounded');
+                            colDiv.innerHTML = `<h3>Column ${colIndex + 1}</h3>`;
+                            propertyInputs.appendChild(colDiv);
+                            addBlockProperties(col, 'multi', colDiv);
+                        });
+                        break;
+                    case 'three-column-blocks':
+                        content.columns.forEach((col, colIndex) => {
+                            const colDiv = document.createElement('div');
+                            colDiv.classList.add('mt-4', 'p-2', 'border', 'border-gray-300', 'rounded');
+                            colDiv.innerHTML = `<h3>Column ${colIndex + 1}</h3>`;
+                            propertyInputs.appendChild(colDiv);
+                            addBlockProperties(col, 'multi', colDiv);
+                        });
+                        break;
+                }
+
+                function createCheckbox(label, key) {
+                    const div = document.createElement('div');
+                    div.classList.add('mb-2');
+                    const labelEl = document.createElement('label');
+                    labelEl.textContent = label;
+                    const inputEl = document.createElement('input');
+                    inputEl.type = 'checkbox';
+                    inputEl.checked = content[key];
+                    inputEl.onchange = (e) => {
+                        content[key] = e.target.checked;
+                        showProperties();
+                        updatePreview();
+                    };
+                    div.appendChild(labelEl);
+                    div.appendChild(inputEl);
+                    propertyInputs.appendChild(div);
+                }
+
+                function addBlockProperties(blocksObj, mode, container = propertyInputs) {
+                    if (mode === 'single') {
+                        const orderSelect = document.createElement('select');
+                        orderSelect.multiple = true;
+                        ['image', 'title', 'text', 'button'].forEach(blockType => {
+                            const opt = document.createElement('option');
+                            opt.value = blockType;
+                            opt.text = blockType.charAt(0).toUpperCase() + blockType.slice(1);
+                            opt.selected = blocksObj.order.includes(blockType);
+                            orderSelect.appendChild(opt);
+                        });
+                        orderSelect.onchange = () => {
+                            blocksObj.order = Array.from(orderSelect.selectedOptions).map(opt => opt.value);
+                            updatePreview();
+                        };
+                        const orderDiv = document.createElement('div');
+                        orderDiv.classList.add('mb-2');
+                        const orderLabel = document.createElement('label');
+                        orderLabel.textContent = 'Block Order (multi-select and drag to reorder)';
+                        orderDiv.appendChild(orderLabel);
+                        orderDiv.appendChild(orderSelect);
+                        container.appendChild(orderDiv);
+
+                        ['image', 'title', 'text', 'button'].forEach(blockType => {
+                            const visDiv = document.createElement('div');
+                            visDiv.classList.add('mb-2');
+                            const visLabel = document.createElement('label');
+                            visLabel.textContent = `Show ${blockType.charAt(0).toUpperCase() + blockType.slice(1)}`;
+                            const visInput = document.createElement('input');
+                            visInput.type = 'checkbox';
+                            visInput.checked = blocksObj.visible[blockType];
+                            visInput.onchange = (e) => {
+                                blocksObj.visible[blockType] = e.target.checked;
+                                updatePreview();
+                            };
+                            visDiv.appendChild(visLabel);
+                            visDiv.appendChild(visInput);
+                            container.appendChild(visDiv);
+                        });
                     }
-                });
+
+                    const blockTypes = ['image', 'title', 'text', 'button'];
+                    blockTypes.forEach(blockType => {
+                        const block = blocksObj.blocks[blockType];
+                        const blockDiv = document.createElement('div');
+                        blockDiv.classList.add('mt-2', 'p-2', 'bg-gray-100', 'rounded');
+                        blockDiv.innerHTML = `<h4>${blockType.charAt(0).toUpperCase() + blockType.slice(1)} Block</h4>`;
+                        container.appendChild(blockDiv);
+
+                        if (blockType === 'image') {
+                            createInput('Image URL', 'url', 'text', '', null, block);
+                            createInput('Link URL', 'link', 'text', '', null, block);
+                            createInput('Align', 'align', 'select', 'center', [
+                                {value: 'left', label: 'Left'},
+                                {value: 'center', label: 'Center'},
+                                {value: 'right', label: 'Right'}
+                            ], block);
+                        } else if (blockType === 'title' || blockType === 'text') {
+                            createInput(blockType === 'title' ? 'Title Text' : 'Text', 'text', blockType === 'text' ? 'textarea' : 'text', '', null, block);
+                            createInput('Font Size', 'fontSize', 'text', '', null, block);
+                            createInput('Color', 'color', 'color', '', null, block);
+                            createInput('Align', 'align', 'select', 'center', [
+                                {value: 'left', label: 'Left'},
+                                {value: 'center', label: 'Center'},
+                                {value: 'right', label: 'Right'}
+                            ], block);
+                        } else if (blockType === 'button') {
+                            createInput('Button Text', 'text', 'text', '', null, block);
+                            createInput('Button Link', 'link', 'text', '', null, block);
+                            createInput('Background Color', 'background', 'color', '', null, block);
+                            createInput('Text Color', 'color', 'color', '', null, block);
+                            createInput('Font Size', 'fontSize', 'text', '', null, block);
+                            createInput('Align', 'align', 'select', 'center', [
+                                {value: 'left', label: 'Left'},
+                                {value: 'center', label: 'Center'},
+                                {value: 'right', label: 'Right'}
+                            ], block);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error showing properties:', error);
+                showMessage('Error showing properties: ' + error.message);
             }
         }
 
         // Function to generate the HTML for a single section
         function generateSectionHtml(section) {
-            const content = section.content;
-            const backgroundStyle = getBackgroundStyle(content);
-            const borderStyle = `border: ${content.borderWidth} ${content.borderStyle} ${content.borderColor}; border-radius: ${content.borderRadius};`;
-            const paddingStyle = `padding-top: ${content.paddingTop}; padding-bottom: ${content.paddingBottom}; padding-left: ${content.paddingLeft}; padding-right: ${content.paddingRight};`;
-            const marginStyle = `margin-top: ${content.marginTop}; margin-bottom: ${content.marginBottom}; margin-left: ${content.marginLeft}; margin-right: ${content.marginRight};`;
-            const tableStyle = `width: 100%; max-width: ${canvasWidth}px; min-width: 0; ${backgroundStyle} ${borderStyle} ${marginStyle}`;
+            try {
+                const content = section.content;
+                const backgroundStyle = getBackgroundStyle(content);
+                const borderStyle = `border: ${content.borderWidth} ${content.borderStyle} ${content.borderColor}; border-radius: ${content.borderRadius};`;
+                const paddingStyle = `padding-top: ${content.paddingTop}; padding-bottom: ${content.paddingBottom}; padding-left: ${content.paddingLeft}; padding-right: ${content.paddingRight};`;
+                const marginStyle = `margin-top: ${content.marginTop}; margin-bottom: ${content.marginBottom}; margin-left: ${content.marginLeft}; margin-right: ${content.marginRight};`;
+                const tableStyle = `width: 100%; max-width: ${canvasWidth}px; min-width: 0; ${backgroundStyle} ${borderStyle} ${marginStyle}`;
 
-            switch (section.type) {
-                case 'header':
-                    return `
-                        <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
-                            <tr>
-                                <td align="${content.align}" style="${paddingStyle}">
-                                    <a href="${content.link}" target="_blank">
-                                        <img src="${content.image}" alt="Header" style="display: block; width: 100%; max-width: ${canvasWidth}px; height: auto; border-radius: ${content.borderRadius};" />
-                                    </a>
-                                </td>
-                            </tr>
-                        </table>
-                    `;
-                case 'title-text':
-                    return `
-                        <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
-                            <tr>
-                                <td align="${content.textAlign}" style="${paddingStyle}">
-                                    <h1 style="font-size: ${content.fontSizeTitle}; color: ${content.textColorTitle}; margin: 0;">${content.title}</h1>
-                                    <p style="font-size: ${content.fontSizeText}; color: ${content.textColorText}; margin-top: 10px; line-height: 1.5;">${content.text}</p>
-                                </td>
-                            </tr>
-                        </table>
-                    `;
-                case 'text-image':
-                    const textColumn = `
-                        <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${canvasWidth/2}px;" role="presentation">
-                            <tr>
-                                <td style="${paddingStyle} text-align: ${content.textAlign};">
-                                    <p style="font-size: ${content.fontSize}; color: ${content.textColor}; margin: 0; line-height: 1.5;">${content.text}</p>
-                                    ${content.showButton ? `
-                                        <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 10px;">
-                                            <tr>
-                                                <td style="background-color: ${content.buttonBackground}; border-radius: 4px;">
-                                                    <a href="${content.buttonLink}" target="_blank" style="font-size: ${content.buttonFontSize}; color: ${content.buttonColor}; padding: 10px 20px; display: block; text-decoration: none;">${content.buttonText}</a>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    ` : ''}
-                                </td>
-                            </tr>
-                        </table>
-                    `;
-                    const imageColumn = `
-                        <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${canvasWidth/2}px;" role="presentation">
-                            <tr>
-                                <td style="${paddingStyle}">
-                                    <img src="${content.image}" alt="Image" style="display: block; width: 100%; max-width: ${canvasWidth/2}px; height: auto;">
-                                </td>
-                            </tr>
-                        </table>
-                    `;
-                    const leftColumn = content.direction === 'text-left' ? textColumn : imageColumn;
-                    const rightColumn = content.direction === 'text-left' ? imageColumn : textColumn;
-                    return `
+                switch (section.type) {
+                    case 'header':
+                        return `
+                            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
+                                <tr>
+                                    <td align="${content.align}" style="${paddingStyle}">
+                                        <a href="${content.link}" target="_blank">
+                                            <img src="${content.image}" alt="Header" style="display: block; width: 100%; max-width: ${canvasWidth}px; height: auto; border-radius: ${content.borderRadius};" />
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
+                    case 'title-text':
+                        return `
+                            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
+                                <tr>
+                                    <td align="${content.textAlign}" style="${paddingStyle}">
+                                        <h1 style="font-size: ${content.fontSizeTitle}; color: ${content.textColorTitle}; margin: 0;">${content.title}</h1>
+                                        <p style="font-size: ${content.fontSizeText}; color: ${content.textColorText}; margin-top: 10px; line-height: 1.5;">${content.text}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
+                    case 'text-image':
+                        const textColumn = `
+                            <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${canvasWidth/2}px;" role="presentation">
+                                <tr>
+                                    <td style="${paddingStyle} text-align: ${content.textAlign};">
+                                        <p style="font-size: ${content.fontSize}; color: ${content.textColor}; margin: 0; line-height: 1.5;">${content.text}</p>
+                                        ${content.showButton ? `
+                                            <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 10px;">
+                                                <tr>
+                                                    <td style="background-color: ${content.buttonBackground}; border-radius: 4px;">
+                                                        <a href="${content.buttonLink}" target="_blank" style="font-size: ${content.buttonFontSize}; color: ${content.buttonColor}; padding: 10px 20px; display: block; text-decoration: none;">${content.buttonText}</a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
+                        const imageColumn = `
+                            <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${canvasWidth/2}px;" role="presentation">
+                                <tr>
+                                    <td style="${paddingStyle}">
+                                        <img src="${content.image}" alt="Image" style="display: block; width: 100%; max-width: ${canvasWidth/2}px; height: auto;">
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
+                        const leftColumn = content.direction === 'text-left' ? textColumn : imageColumn;
+                        const rightColumn = content.direction === 'text-left' ? imageColumn : textColumn;
+                        return `
+                            <!--[if mso]>
+                            <table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" align="center" style="${tableStyle}" role="presentation">
+                                <tr>
+                                    <td style="width: ${canvasWidth/2}px;">
+                            <![endif]-->
+                            ${leftColumn}
+                            <!--[if mso]>
+                                    </td>
+                                    <td style="width: ${canvasWidth/2}px;">
+                            <![endif]-->
+                            ${rightColumn}
+                            <!--[if mso]>
+                                    </td>
+                                </tr>
+                            </table>
+                            <![endif]-->
+                        `;
+                    case 'hero':
+                        return `
+                            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle} background-image: url(${content.backgroundImage}); background-size: cover; background-position: center;" role="presentation">
+                                <tr>
+                                    <td style="${paddingStyle} text-align: ${content.overlayAlign}; color: ${content.overlayTextColor};">
+                                        <h1 style="font-size: 32px; margin: 0;">${content.overlayTitle}</h1>
+                                        <p style="font-size: 18px; margin-top: 10px; line-height: 1.5;">${content.overlayText}</p>
+                                        ${content.showOverlayButton ? `
+                                            <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
+                                                <tr>
+                                                    <td style="background-color: ${content.overlayButtonBackground}; border-radius: 4px;">
+                                                        <a href="${content.overlayButtonLink}" target="_blank" style="font-size: 16px; color: ${content.overlayButtonColor}; padding: 12px 24px; display: block; text-decoration: none;">${content.overlayButtonText}</a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
+                    case 'single-column-blocks':
+                        const blocksHtml = content.order.filter(type => content.visible[type]).map(type => generateBlockHtml(content.blocks[type], type)).join('');
+                        return `
+                            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
+                                <tr>
+                                    <td style="${paddingStyle}">
+                                        ${blocksHtml}
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
+                    case 'two-column-blocks':
+                        return generateMultiColumnHtml(content, 2);
+                    case 'three-column-blocks':
+                        return generateMultiColumnHtml(content, 3);
+                }
+            } catch (error) {
+                console.error('Error generating section HTML:', error);
+                return `<div>Error rendering section: ${error.message}</div>`;
+            }
+        }
+
+        function generateBlockHtml(block, type) {
+            try {
+                switch (type) {
+                    case 'image':
+                        return `
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" align="${block.align}" style="margin-bottom: 10px;">
+                                <tr>
+                                    <td>
+                                        <a href="${block.link}" target="_blank">
+                                            <img src="${block.url}" alt="Image" style="display: block; width: 100%; max-width: ${canvasWidth}px; height: auto;">
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
+                    case 'title':
+                        return `
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" align="${block.align}" style="margin-bottom: 10px;">
+                                <tr>
+                                    <td style="font-size: ${block.fontSize}; color: ${block.color}; text-align: ${block.align};">
+                                        <h2 style="margin: 0;">${block.text}</h2>
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
+                    case 'text':
+                        return `
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%" align="${block.align}" style="margin-bottom: 10px;">
+                                <tr>
+                                    <td style="font-size: ${block.fontSize}; color: ${block.color}; text-align: ${block.align};">
+                                        <p style="margin: 0; line-height: 1.5;">${block.text}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
+                    case 'button':
+                        return `
+                            <table cellpadding="0" cellspacing="0" border="0" align="${block.align}" style="margin-bottom: 10px;">
+                                <tr>
+                                    <td style="background-color: ${block.background}; border-radius: 4px;">
+                                        <a href="${block.link}" target="_blank" style="font-size: ${block.fontSize}; color: ${block.color}; padding: 10px 20px; display: block; text-decoration: none; text-align: center;">${block.text}</a>
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
+                }
+            } catch (error) {
+                console.error('Error generating block HTML:', error);
+                return `<div>Error rendering block: ${error.message}</div>`;
+            }
+        }
+
+        function generateMultiColumnHtml(content, numColumns) {
+            try {
+                const columnWidth = Math.floor(canvasWidth / numColumns);
+                let columnsHtml = '';
+                let msoHtml = `[if mso]<table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" align="center" role="presentation"><tr>`;
+                content.columns.forEach((col, index) => {
+                    const blocksHtml = Object.keys(col.blocks).map(type => generateBlockHtml(col.blocks[type], type)).join('');
+                    columnsHtml += `
                         <!--[if mso]>
-                        <table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" align="center" style="${tableStyle}" role="presentation">
-                            <tr>
-                                <td style="width: ${canvasWidth/2}px;">
+                            <td style="width: ${columnWidth}px; vertical-align: top;">
                         <![endif]-->
-                        ${leftColumn}
-                        <!--[if mso]>
-                                </td>
-                                <td style="width: ${canvasWidth/2}px;">
-                        <![endif]-->
-                        ${rightColumn}
-                        <!--[if mso]>
-                                </td>
-                            </tr>
-                        </table>
-                        <![endif]-->
-                    `;
-                case 'hero':
-                    return `
-                        <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle} background-image: url(${content.backgroundImage}); background-size: cover; background-position: center;" role="presentation">
+                        <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${columnWidth}px; display: inline-block; vertical-align: top;" role="presentation">
                             <tr>
-                                <td style="${paddingStyle} text-align: ${content.overlayAlign}; color: ${content.overlayTextColor};">
-                                    <h1 style="font-size: 32px; margin: 0;">${content.overlayTitle}</h1>
-                                    <p style="font-size: 18px; margin-top: 10px; line-height: 1.5;">${content.overlayText}</p>
-                                    ${content.showOverlayButton ? `
-                                        <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
-                                            <tr>
-                                                <td style="background-color: ${content.overlayButtonBackground}; border-radius: 4px;">
-                                                    <a href="${content.overlayButtonLink}" target="_blank" style="font-size: 16px; color: ${content.overlayButtonColor}; padding: 12px 24px; display: block; text-decoration: none;">${content.overlayButtonText}</a>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    ` : ''}
-                                </td>
-                            </tr>
-                        </table>
-                    `;
-                case 'single-column-blocks':
-                    const blocksHtml = content.order.filter(type => content.visible[type]).map(type => generateBlockHtml(content.blocks[type], type)).join('');
-                    return `
-                        <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
-                            <tr>
-                                <td style="${paddingStyle}">
+                                <td style="padding: 10px;">
                                     ${blocksHtml}
                                 </td>
                             </tr>
                         </table>
                     `;
-                case 'two-column-blocks':
-                    return generateMultiColumnHtml(content, 2);
-                case 'three-column-blocks':
-                    return generateMultiColumnHtml(content, 3);
-            }
-        }
-
-        function generateBlockHtml(block, type) {
-            switch (type) {
-                case 'image':
-                    return `
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="${block.align}" style="margin-bottom: 10px;">
-                            <tr>
-                                <td>
-                                    <a href="${block.link}" target="_blank">
-                                        <img src="${block.url}" alt="Image" style="display: block; width: 100%; max-width: ${canvasWidth}px; height: auto;">
-                                    </a>
-                                </td>
-                            </tr>
-                        </table>
-                    `;
-                case 'title':
-                    return `
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="${block.align}" style="margin-bottom: 10px;">
-                            <tr>
-                                <td style="font-size: ${block.fontSize}; color: ${block.color}; text-align: ${block.align};">
-                                    <h2 style="margin: 0;">${block.text}</h2>
-                                </td>
-                            </tr>
-                        </table>
-                    `;
-                case 'text':
-                    return `
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%" align="${block.align}" style="margin-bottom: 10px;">
-                            <tr>
-                                <td style="font-size: ${block.fontSize}; color: ${block.color}; text-align: ${block.align};">
-                                    <p style="margin: 0; line-height: 1.5;">${block.text}</p>
-                                </td>
-                            </tr>
-                        </table>
-                    `;
-                case 'button':
-                    return `
-                        <table cellpadding="0" cellspacing="0" border="0" align="${block.align}" style="margin-bottom: 10px;">
-                            <tr>
-                                <td style="background-color: ${block.background}; border-radius: 4px;">
-                                    <a href="${block.link}" target="_blank" style="font-size: ${block.fontSize}; color: ${block.color}; padding: 10px 20px; display: block; text-decoration: none; text-align: center;">${block.text}</a>
-                                </td>
-                            </tr>
-                        </table>
-                    `;
-            }
-        }
-
-        function generateMultiColumnHtml(content, numColumns) {
-            const columnWidth = Math.floor(canvasWidth / numColumns);
-            let columnsHtml = '';
-            let msoHtml = `[if mso]<table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" align="center" role="presentation"><tr>`;
-            content.columns.forEach((col, index) => {
-                const blocksHtml = Object.keys(col.blocks).map(type => generateBlockHtml(col.blocks[type], type)).join('');
-                columnsHtml += `
-                    <!--[if mso]>
-                        <td style="width: ${columnWidth}px; vertical-align: top;">
-                    <![endif]-->
-                    <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${columnWidth}px; display: inline-block; vertical-align: top;" role="presentation">
+                    msoHtml += `<td style="width: ${columnWidth}px;"></td>`;
+                });
+                msoHtml += `</tr></table><![endif]>`;
+                const tableStyle = `width: 100%; max-width: ${canvasWidth}px; min-width: 0; ${getBackgroundStyle(content)}`;
+                return `
+                    <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
                         <tr>
-                            <td style="padding: 10px;">
-                                ${blocksHtml}
+                            <td>
+                                ${msoHtml.replace(/<\/td><td/g, '</td><td')} 
+                                ${columnsHtml}
                             </td>
                         </tr>
                     </table>
                 `;
-                msoHtml += `<td style="width: ${columnWidth}px;"></td>`;
-            });
-            msoHtml += `</tr></table><![endif]>`;
-            const tableStyle = `width: 100%; max-width: ${canvasWidth}px; min-width: 0; ${getBackgroundStyle(content)}`;
-            return `
-                <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
-                    <tr>
-                        <td>
-                            ${msoHtml.replace(/<\/td><td/g, '</td><td')} 
-                            ${columnsHtml}
-                        </td>
-                    </tr>
-                </table>
-            `;
+            } catch (error) {
+                console.error('Error generating multi-column HTML:', error);
+                return `<div>Error rendering multi-column section: ${error.message}</div>`;
+            }
         }
 
         function getBackgroundStyle(content) {
-            if (content.backgroundType === 'color') {
-                return `background-color: ${content.backgroundColor};`;
-            } else if (content.backgroundType === 'image') {
-                return `background-image: url(${content.backgroundImage}); background-size: cover; background-position: center;`;
-            } else if (content.backgroundType === 'gradient') {
-                return `background: ${content.backgroundGradient};`;
+            try {
+                if (content.backgroundType === 'color') {
+                    return `background-color: ${content.backgroundColor};`;
+                } else if (content.backgroundType === 'image') {
+                    return `background-image: url(${content.backgroundImage}); background-size: cover; background-position: center;`;
+                } else if (content.backgroundType === 'gradient') {
+                    return `background: ${content.backgroundGradient};`;
+                }
+                return '';
+            } catch (error) {
+                console.error('Error generating background style:', error);
+                return '';
             }
-            return '';
         }
 
         // Function to generate the full email HTML document
         function generateEmailHtml() {
-            const sectionsHtml = sections.map(generateSectionHtml).join('');
-            
-            const fullHtml = `
+            try {
+                const sectionsHtml = sections.map(generateSectionHtml).join('');
+                
+                const fullHtml = `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
@@ -899,59 +961,76 @@
 </head>
 <body style="margin: 0; padding: 0; background-color: #f6f6f6;">
     <center style="width: 100%; background-color: #f6f6f6;">
-        <table class "
-
-container" cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="width: 100%; max-width: ${canvasWidth}px; min-width: 0; background-color: #ffffff;" role="presentation">
+        <table class="container" cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="width: 100%; max-width: ${canvasWidth}px; min-width: 0; background-color: #ffffff;" role="presentation">
             ${sectionsHtml}
         </table>
     </center>
 </body>
 </html>
-            `;
-            return fullHtml;
+                `;
+                return fullHtml;
+            } catch (error) {
+                console.error('Error generating email HTML:', error);
+                return `<div>Error generating email: ${error.message}</div>`;
+            }
         }
 
         // Update the iframe preview and the code output area
         function updatePreview() {
-            const doc = previewFrame.contentWindow.document;
-            doc.open();
-            doc.write(generateEmailHtml());
-            doc.close();
-            codeOutput.value = generateEmailHtml();
+            try {
+                const doc = previewFrame.contentWindow.document;
+                doc.open();
+                doc.write(generateEmailHtml());
+                doc.close();
+                codeOutput.value = generateEmailHtml();
 
-            // Add click listeners to sections in the preview to activate them
-            const previewBody = previewFrame.contentWindow.document.body;
-            const sectionsInPreview = previewBody.querySelectorAll('table[role="presentation"]');
-            sectionsInPreview.forEach((table, index) => {
-                table.style.outline = index === activeSectionIndex ? '2px solid #3b82f6' : 'none';
-                table.onclick = (e) => {
-                    e.stopPropagation();
-                    activeSectionIndex = index;
-                    showProperties();
-                    updateSectionList();
-                    updatePreview();
-                };
-            });
+                // Add click listeners to sections in the preview to activate them
+                const previewBody = previewFrame.contentWindow.document.body;
+                const sectionsInPreview = previewBody.querySelectorAll('table[role="presentation"]');
+                sectionsInPreview.forEach((table, index) => {
+                    table.style.outline = index === activeSectionIndex ? '2px solid #3b82f6' : 'none';
+                    table.onclick = (e) => {
+                        e.stopPropagation();
+                        activeSectionIndex = index;
+                        showProperties();
+                        updateSectionList();
+                        updatePreview();
+                    };
+                });
+            } catch (error) {
+                console.error('Error updating preview:', error);
+                showMessage('Error updating preview: ' + error.message);
+            }
         }
 
         // Copy the code to the clipboard
         function copyCode() {
-            codeOutput.select();
-            document.execCommand('copy');
-            showMessage('HTML code copied to clipboard!');
+            try {
+                codeOutput.select();
+                document.execCommand('copy');
+                showMessage('HTML code copied to clipboard!');
+            } catch (error) {
+                console.error('Error copying code:', error);
+                showMessage('Error copying code: ' + error.message);
+            }
         }
 
         // Save to file
         function saveToFile() {
-            const htmlContent = generateEmailHtml();
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'email-template.html';
-            a.click();
-            URL.revokeObjectURL(url);
-            showMessage('Template saved as email-template.html!');
+            try {
+                const htmlContent = generateEmailHtml();
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'email-template.html';
+                a.click();
+                URL.revokeObjectURL(url);
+                showMessage('Template saved as email-template.html!');
+            } catch (error) {
+                console.error('Error saving to file:', error);
+                showMessage('Error saving to file: ' + error.message);
+            }
         }
 
         // Helper function to show a message box
