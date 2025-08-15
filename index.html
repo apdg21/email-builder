@@ -190,9 +190,9 @@
                     type: type,
                     content: getDefaultContent(type)
                 };
+                console.log('Added section:', JSON.stringify(newSection, null, 2)); // Debug log
                 sections.push(newSection);
                 activeSectionIndex = sections.length - 1;
-                console.log('Added section:', JSON.stringify(newSection, null, 2)); // Debug log
                 updateSectionList();
                 showProperties();
                 updatePreview();
@@ -204,93 +204,105 @@
         }
 
         function getDefaultContent(type) {
-            const commonStyles = {
-                backgroundType: 'color',
-                backgroundColor: '#ffffff',
-                backgroundImage: '',
-                backgroundGradient: 'linear-gradient(to right, #ffffff, #ffffff)',
-                borderWidth: '0px',
-                borderColor: '#000000',
-                borderStyle: 'solid',
-                borderRadius: '0px',
-                paddingTop: '20px',
-                paddingBottom: '20px',
-                paddingLeft: '20px',
-                paddingRight: '20px',
-                marginTop: '0px',
-                marginBottom: '0px',
-                marginLeft: '0px',
-                marginRight: '0px'
-            };
-            switch (type) {
-                case 'header':
-                    return {
-                        ...commonStyles,
-                        image: 'https://placehold.co/600x150/000000/FFFFFF?text=Logo',
-                        link: '#',
-                        align: 'center'
-                    };
-                case 'title-text':
-                    return {
-                        ...commonStyles,
-                        title: 'Your Title Here',
-                        text: 'This is a paragraph of text. You can edit this.',
-                        fontSizeTitle: '24px',
-                        fontSizeText: '16px',
-                        textColorTitle: '#000000',
-                        textColorText: '#333333',
-                        textAlign: 'center'
-                    };
-                case 'text-image':
-                    return {
-                        ...commonStyles,
-                        image: 'https://placehold.co/250x250/F3F4F6/6B7280?text=Image',
-                        text: 'This is some text next to an image.',
-                        fontSize: '16px',
-                        textColor: '#333333',
-                        textAlign: 'left',
-                        direction: 'text-left',
-                        showButton: false,
-                        buttonText: 'Click Me',
-                        buttonLink: '#',
-                        buttonBackground: '#007bff',
-                        buttonColor: '#ffffff',
-                        buttonFontSize: '16px'
-                    };
-                case 'hero':
-                    return {
-                        ...commonStyles,
-                        backgroundType: 'image',
-                        backgroundImage: 'https://placehold.co/600x300/EEEEEE/808080?text=Hero',
-                        overlayTitle: 'Hero Title',
-                        overlayText: 'Hero description text.',
-                        overlayTextColor: '#ffffff',
-                        overlayAlign: 'center',
-                        showOverlayButton: true,
-                        overlayButtonText: 'Learn More',
-                        overlayButtonLink: '#',
-                        overlayButtonBackground: '#ffffff',
-                        overlayButtonColor: '#000000'
-                    };
-                case 'single-column-blocks':
-                    return {
-                        ...commonStyles,
-                        blocks: getDefaultBlocks(),
-                        order: ['image', 'title', 'text', 'button'],
-                        visible: {image: true, title: true, text: true, button: true}
-                    };
-                case 'two-column-blocks':
-                    return {
-                        ...commonStyles,
-                        columns: [getDefaultBlocks(), getDefaultBlocks()]
-                    };
-                case 'three-column-blocks':
-                    return {
-                        ...commonStyles,
-                        columns: [getDefaultBlocks(), getDefaultBlocks(), getDefaultBlocks()]
-                    };
-                default:
-                    throw new Error(`Unknown section type: ${type}`);
+            try {
+                const commonStyles = {
+                    backgroundType: 'color',
+                    backgroundColor: '#ffffff',
+                    backgroundImage: '',
+                    backgroundGradient: 'linear-gradient(to right, #ffffff, #ffffff)',
+                    borderWidth: '0px',
+                    borderColor: '#000000',
+                    borderStyle: 'solid',
+                    borderRadius: '0px',
+                    paddingTop: '20px',
+                    paddingBottom: '20px',
+                    paddingLeft: '20px',
+                    paddingRight: '20px',
+                    marginTop: '0px',
+                    marginBottom: '0px',
+                    marginLeft: '0px',
+                    marginRight: '0px'
+                };
+                switch (type) {
+                    case 'header':
+                        return {
+                            ...commonStyles,
+                            image: 'https://placehold.co/600x150/000000/FFFFFF?text=Logo',
+                            link: '#',
+                            align: 'center'
+                        };
+                    case 'title-text':
+                        return {
+                            ...commonStyles,
+                            title: 'Your Title Here',
+                            text: 'This is a paragraph of text. You can edit this.',
+                            fontSizeTitle: '24px',
+                            fontSizeText: '16px',
+                            textColorTitle: '#000000',
+                            textColorText: '#333333',
+                            textAlign: 'center'
+                        };
+                    case 'text-image':
+                        return {
+                            ...commonStyles,
+                            image: 'https://placehold.co/250x250/F3F4F6/6B7280?text=Image',
+                            text: 'This is some text next to an image.',
+                            fontSize: '16px',
+                            textColor: '#333333',
+                            textAlign: 'left',
+                            direction: 'text-left',
+                            showButton: false,
+                            buttonText: 'Click Me',
+                            buttonLink: '#',
+                            buttonBackground: '#007bff',
+                            buttonColor: '#ffffff',
+                            buttonFontSize: '16px'
+                        };
+                    case 'hero':
+                        return {
+                            ...commonStyles,
+                            backgroundType: 'image',
+                            backgroundImage: 'https://placehold.co/600x300/EEEEEE/808080?text=Hero',
+                            overlayTitle: 'Hero Title',
+                            overlayText: 'Hero description text.',
+                            overlayTextColor: '#ffffff',
+                            overlayAlign: 'center',
+                            showOverlayButton: true,
+                            overlayButtonText: 'Learn More',
+                            overlayButtonLink: '#',
+                            overlayButtonBackground: '#ffffff',
+                            overlayButtonColor: '#000000'
+                        };
+                    case 'single-column-blocks':
+                        return {
+                            ...commonStyles,
+                            blocks: getDefaultBlocks(),
+                            order: ['image', 'title', 'text', 'button'],
+                            visible: {image: true, title: true, text: true, button: true}
+                        };
+                    case 'two-column-blocks':
+                        return {
+                            ...commonStyles,
+                            columns: [
+                                { blocks: getDefaultBlocks() },
+                                { blocks: getDefaultBlocks() }
+                            ]
+                        };
+                    case 'three-column-blocks':
+                        return {
+                            ...commonStyles,
+                            columns: [
+                                { blocks: getDefaultBlocks() },
+                                { blocks: getDefaultBlocks() },
+                                { blocks: getDefaultBlocks() }
+                            ]
+                        };
+                    default:
+                        throw new Error(`Unknown section type: ${type}`);
+                }
+            } catch (error) {
+                console.error('Error in getDefaultContent:', error);
+                throw new Error('Failed to initialize section content: ' + error.message);
             }
         }
 
@@ -817,11 +829,11 @@
                             <table cellpadding="0" cellspacing="0" border="0" width="100%" align="${block.align}" style="margin-bottom: 10px;">
                                 <tr>
                                     <td style="font-size: ${block.fontSize}; color: ${block.color}; text-align: ${block.align};">
-                                    <h2 style="margin: 0;">${block.text}</h2>
-                                </td>
-                            </tr>
-                        </table>
-                    `;
+                                        <h2 style="margin: 0;">${block.text}</h2>
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
                     case 'text':
                         return `
                             <table cellpadding="0" cellspacing="0" border="0" width="100%" align="${block.align}" style="margin-bottom: 10px;">
@@ -859,7 +871,8 @@
                 let msoHtml = `[if mso]<table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" align="center" role="presentation"><tr>`;
                 content.columns.forEach((col, index) => {
                     if (!col || !col.blocks || typeof col.blocks !== 'object') {
-                        throw new Error(`Blocks object is undefined or invalid in column ${index + 1}`);
+                        console.warn(`Invalid blocks in column ${index + 1}, using default blocks`);
+                        col = { blocks: getDefaultBlocks() }; // Fallback to default blocks
                     }
                     console.log(`Processing column ${index + 1}:`, JSON.stringify(col, null, 2)); // Debug log
                     const blocksHtml = Object.keys(col.blocks)
