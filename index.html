@@ -750,22 +750,28 @@
                         const leftColumn = content.direction === 'text-left' ? textColumn : imageColumn;
                         const rightColumn = content.direction === 'text-left' ? imageColumn : textColumn;
                         return `
-                            <!--[if mso]>
-                            <table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" align="center" style="${tableStyle}" role="presentation">
+                            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
                                 <tr>
-                                    <td style="width: ${canvasWidth/2}px;">
-                            <![endif]-->
-                            ${leftColumn}
-                            <!--[if mso]>
-                                    </td>
-                                    <td style="width: ${canvasWidth/2}px;">
-                            <![endif]-->
-                            ${rightColumn}
-                            <!--[if mso]>
+                                    <td style="padding: 0;">
+                                        <!--[if mso]>
+                                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                            <tr>
+                                                <td style="width: ${canvasWidth/2}px;">
+                                        <![endif]-->
+                                        ${leftColumn}
+                                        <!--[if mso]>
+                                                </td>
+                                                <td style="width: ${canvasWidth/2}px;">
+                                        <![endif]-->
+                                        ${rightColumn}
+                                        <!--[if mso]>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <![endif]-->
                                     </td>
                                 </tr>
                             </table>
-                            <![endif]-->
                         `;
                     case 'hero':
                         return `
@@ -866,44 +872,44 @@
                 if (!content.columns || !Array.isArray(content.columns)) {
                     throw new Error('Columns array is undefined or not an array');
                 }
-                const columnWidth = Math.floor(canvasWidth / numColumns);
+                // Adjust column width to account for padding
+                const columnWidth = Math.floor((canvasWidth - (numColumns * 20)) / numColumns); // Subtract padding (10px per side per column)
                 let columnsHtml = '';
-                let msoHtml = `[if mso]<table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" align="center" role="presentation"><tr>`;
+                let msoHtml = `<table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" role="presentation"><tr>`;
                 content.columns.forEach((col, index) => {
                     if (!col || !col.blocks || typeof col.blocks !== 'object') {
                         console.warn(`Invalid blocks in column ${index + 1}, using default blocks`);
-                        col = { blocks: getDefaultBlocks() }; // Fallback to default blocks
+                        col = { blocks: getDefaultBlocks() };
                     }
-                    console.log(`Processing column ${index + 1}:`, JSON.stringify(col, null, 2)); // Debug log
+                    console.log(`Processing column ${index + 1} (width: ${columnWidth}px):`, JSON.stringify(col, null, 2));
                     const blocksHtml = Object.keys(col.blocks)
                         .filter(type => col.blocks[type])
                         .map(type => generateBlockHtml(col.blocks[type], type))
                         .join('');
                     columnsHtml += `
-                        <!--[if mso]>
-                            <td style="width: ${columnWidth}px; vertical-align: top;">
-                        <![endif]-->
-                        <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${columnWidth}px; display: inline-block; vertical-align: top;" role="presentation">
-                            <tr>
-                                <td style="padding: 10px;">
-                                    ${blocksHtml}
-                                </td>
-                            </tr>
-                        </table>
+                        <td style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
+                            <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top;" role="presentation">
+                                <tr>
+                                    <td style="padding: 10px;">
+                                        ${blocksHtml}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
                     `;
-                    msoHtml += `<td style="width: ${columnWidth}px;"></td>`;
+                    msoHtml += `<td style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">${blocksHtml}</td>`;
                 });
-                msoHtml += `</tr></table><![endif]>`;
-                const tableStyle = `width: 100%; max-width: ${canvasWidth}px; min-width: 0; ${getBackgroundStyle(content)}`;
+                msoHtml += `</tr></table>`;
+                const tableStyle = `width: 100%; max-width: ${canvasWidth}px; min-width: 0; ${getBackgroundStyle(content)} border: ${content.borderWidth} ${content.borderStyle} ${content.borderColor}; border-radius: ${content.borderRadius}; margin-top: ${content.marginTop}; margin-bottom: ${content.marginBottom}; margin-left: ${content.marginLeft}; margin-right: ${content.marginRight};`;
                 return `
+                    <!--[if mso]>${msoHtml}<![endif]-->
+                    <!--[if !mso]><!-->
                     <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
                         <tr>
-                            <td>
-                                ${msoHtml.replace(/<\/td><td/g, '</td><td')} 
-                                ${columnsHtml}
-                            </td>
+                            ${columnsHtml}
                         </tr>
                     </table>
+                    <!--<![endif]-->
                 `;
             } catch (error) {
                 console.error('Error generating multi-column HTML:', error);
@@ -967,18 +973,17 @@
             border: 0;
         }
         .column {
-            display: inline-block;
             vertical-align: top;
         }
-        @media only screen and (max-width: ${canvasWidth}px) {
+        @media only screen and (max-width: 600px) {
             .container {
                 width: 100% !important;
                 max-width: 100% !important;
             }
             .column {
                 display: block !important;
-                max-width: 100% !important;
                 width: 100% !important;
+                max-width: 100% !important;
             }
             img {
                 width: 100% !important;
