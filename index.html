@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Email Template Builder</title>
+    <!-- Tailwind CSS for the application UI. The email template itself will use tables and inline styles. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the app's UI */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .builder-container {
+            min-height: 100vh;
+        }
+
+        .section-panel {
+            min-height: 100vh;
+            overflow-y: auto;
+            border-right: 1px solid #e5e7eb;
+        }
+
+        .preview-iframe {
+            height: 100%;
+            width: 100%;
+            border: none;
+            background-color: #ffffff;
+        }
+
+        .section-item {
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .section-item:hover {
+            background-color: #f3f4f6;
+        }
+
+        .section-item.active {
+            background-color: #e5e7eb;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .draggable-handle {
+            cursor: grab;
+        }
+
+        /* Basic styles for the input panel */
+        input[type="text"], input[type="number"], input[type="color"], textarea, select {
+            @apply w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500;
+        }
+
+        label {
+            @apply block text-sm font-medium text-gray-700 mt-2;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background-color: #10B981;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="flex flex-col lg:flex-row builder-container">
+        <!-- Left Panel: Controls and Inputs -->
+        <div class="w-full lg:w-1/3 bg-white p-4 section-panel">
+            <h1 class="text-2xl font-bold mb-4 text-center text-gray-800">Email Builder</h1>
+            
+            <!-- Canvas Settings -->
+            <div class="mb-6 p-4 border border-dashed border-gray-300 rounded-lg">
+                <h2 class="text-lg font-semibold mb-2">Canvas Settings</h2>
+                <div>
+                    <label for="canvas-width">Canvas Width (px)</label>
+                    <input type="number" id="canvas-width" value="600" min="300" max="800">
+                </div>
+            </div>
+
+            <!-- Section Picker -->
+            <div id="section-picker" class="mb-6 p-4 border border-dashed border-gray-300 rounded-lg">
+                <h2 class="text-lg font-semibold mb-2">Add a Section</h2>
+                <div class="flex space-x-2">
+                    <select id="section-type-select" class="w-full">
+                        <option value="header">Header</option>
+                        <option value="title-text">Title & Text</option>
+                        <option value="text-image">2-Col Text/Image</option>
+                        <option value="hero">Hero (Image with Overlay)</option>
+                        <option value="single-column-blocks">Single Column Blocks</option>
+                        <option value="two-column-blocks">Two Column Blocks</option>
+                        <option value="three-column-blocks">Three Column Blocks</option>
+                    </select>
+                    <button onclick="addSection()" class="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300">
+                        Add
+                    </button>
+                </div>
+            </div>
+
+            <!-- List of sections added -->
+            <div id="sections-list" class="mb-6">
+                <h2 class="text-lg font-semibold mb-2">Sections</h2>
+                <div id="section-list-container" class="space-y-2">
+                    <!-- Section list items will be generated here -->
+                    <div class="text-center text-gray-400 p-4">Add a section to get started</div>
+                </div>
+            </div>
+
+            <!-- Active Section Properties -->
+            <div id="properties-panel" class="p-4 bg-gray-50 rounded-lg hidden">
+                <h2 class="text-lg font-semibold mb-2">Section Properties</h2>
+                <div id="property-inputs">
+                    <!-- Dynamic inputs will be generated here -->
+                </div>
+                <button onclick="removeSection()" class="mt-4 w-full p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-300">
+                    Remove Section
+                </button>
+            </div>
+
+            <!-- Output Code Area -->
+            <div class="mt-8">
+                <h2 class="text-lg font-semibold mb-2">Final HTML Code</h2>
+                <textarea id="code-output" rows="10" readonly class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-800 font-mono text-xs"></textarea>
+                <button onclick="copyCode()" class="w-full mt-2 p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-300">
+                    Copy Code
+                </button>
+                <button onclick="saveToFile()" class="w-full mt-2 p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300">
+                    Save to File
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Panel: Live Preview -->
+        <div class="w-full lg:w-2/3 p-4 bg-gray-200 flex justify-center items-start">
+            <iframe id="preview-frame" class="preview-iframe rounded-lg shadow-lg"></iframe>
+        </div>
+    </div>
+    
+    <div id="message-box" class="message-box"></div>
+
+    <script>
+        // Data model for the email sections
+        let sections = [];
+        let activeSectionIndex = null;
+        let canvasWidth = 600;
+
+        // Get DOM elements
+        let previewFrame = document.getElementById('preview-frame');
+        let propertiesPanel = document.getElementById('properties-panel');
+        let propertyInputs = document.getElementById('property-inputs');
+        let codeOutput = document.getElementById('code-output');
+        let sectionListContainer = document.getElementById('section-list-container');
+        let sectionTypeSelect = document.getElementById('section-type-select');
+        let messageBox = document.getElementById('message-box');
+        let canvasWidthInput = document.getElementById('canvas-width');
+
+        // Add event listener for canvas width input
+        canvasWidthInput.oninput = (e) => {
+            canvasWidth = parseInt(e.target.value);
+            updatePreview();
+        };
+
+        // Initial render of the preview
+        updatePreview();
+
+        // Function to add a new section
+        function addSection() {
+            const type = sectionTypeSelect.value;
+            const newSection = {
+                id: Date.now(), // Unique ID for keying
+                type: type,
+                // Default content and styles based on the section type
+                content: getDefaultContent(type)
+            };
+            sections.push(newSection);
+            activeSectionIndex = sections.length - 1;
+            updatePreview();
+            showProperties();
+            updateSectionList();
+        }
+
+        function getDefaultContent(type) {
+            const commonStyles = {
+                backgroundType: 'color',
+                backgroundColor: '#ffffff',
+                backgroundImage: '',
+                backgroundGradient: 'linear-gradient(to right, #ffffff, #ffffff)',
+                borderWidth: '0px',
+                borderColor: '#000000',
+                borderStyle: 'solid',
+                borderRadius: '0px',
+                paddingTop: '20px',
+                paddingBottom: '20px',
+                paddingLeft: '20px',
+                paddingRight: '20px',
+                marginTop: '0px',
+                marginBottom: '0px',
+                marginLeft: '0px',
+                marginRight: '0px'
+            };
+            switch (type) {
+                case 'header':
+                    return {
+                        ...commonStyles,
+                        image: 'https://placehold.co/600x150/000000/FFFFFF?text=Logo',
+                        link: '#'
+                    };
+                case 'title-text':
+                    return {
+                        ...commonStyles,
+                        title: 'Your Title Here',
+                        text: 'This is a paragraph of text. You can edit this.',
+                        fontSizeTitle: '24px',
+                        fontSizeText: '16px',
+                        textColorTitle: '#000000',
+                        textColorText: '#333333',
+                        textAlign: 'center'
+                    };
+                case 'text-image':
+                    return {
+                        ...commonStyles,
+                        image: 'https://placehold.co/250x250/F3F4F6/6B7280?text=Image',
+                        text: 'This is some text next to an image.',
+                        fontSize: '16px',
+                        textColor: '#333333',
+                        textAlign: 'left',
+                        direction: 'text-left', // 'text-left' or 'text-right'
+                        showButton: false,
+                        buttonText: 'Click Me',
+                        buttonLink: '#',
+                        buttonBackground: '#007bff',
+                        buttonColor: '#ffffff',
+                        buttonFontSize: '16px'
+                    };
+                case 'hero':
+                    return {
+                        ...commonStyles,
+                        backgroundType: 'image',
+                        backgroundImage: 'https://placehold.co/600x300/EEEEEE/808080?text=Hero',
+                        overlayTitle: 'Hero Title',
+                        overlayText: 'Hero description text.',
+                        overlayTextColor: '#ffffff',
+                        overlayAlign: 'center',
+                        showOverlayButton: true,
+                        overlayButtonText: 'Learn More',
+                        overlayButtonLink: '#',
+                        overlayButtonBackground: '#ffffff',
+                        overlayButtonColor: '#000000'
+                    };
+                case 'single-column-blocks':
+                    return {
+                        ...commonStyles,
+                        blocks: getDefaultBlocks(),
+                        order: ['image', 'title', 'text', 'button'],
+                        visible: {image: true, title: true, text: true, button: true}
+                    };
+                case 'two-column-blocks':
+                    return {
+                        ...commonStyles,
+                        columns: [getDefaultBlocks(), getDefaultBlocks()]
+                    };
+                case 'three-column-blocks':
+                    return {
+                        ...commonStyles,
+                        columns: [getDefaultBlocks(), getDefaultBlocks(), getDefaultBlocks()]
+                    };
+            }
+        }
+
+        function getDefaultBlocks() {
+            return {
+                image: {url: 'https://placehold.co/200x200/EEEEEE/808080?text=Image', link: '#'},
+                title: {text: 'Title', fontSize: '20px', color: '#000000', align: 'center'},
+                text: {text: 'Description text.', fontSize: '14px', color: '#333333', align: 'center'},
+                button: {text: 'Button', link: '#', background: '#007bff', color: '#ffffff', fontSize: '16px'}
+            };
+        }
+
+        // Function to remove the currently active section
+        function removeSection() {
+            if (activeSectionIndex !== null && confirm('Are you sure you want to remove this section?')) {
+                sections.splice(activeSectionIndex, 1);
+                activeSectionIndex = null;
+                updatePreview();
+                showProperties(); // Hide the properties panel
+                updateSectionList();
+            }
+        }
+
+        // Update the list of sections on the left
+        function updateSectionList() {
+            sectionListContainer.innerHTML = '';
+            if (sections.length === 0) {
+                sectionListContainer.innerHTML = '<div class="text-center text-gray-400 p-4">Add a section to get started</div>';
+            } else {
+                sections.forEach((section, index) => {
+                    const sectionName = section.type.replace(/-/g, ' ').split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+                    const sectionItem = document.createElement('div');
+                    sectionItem.classList.add('section-item', 'p-3', 'rounded-lg', 'flex', 'items-center', 'justify-between');
+                    sectionItem.draggable = true;
+                    if (index === activeSectionIndex) {
+                        sectionItem.classList.add('active');
+                    }
+                    sectionItem.innerHTML = `
+                        <span class="font-medium text-gray-700">${sectionName}</span>
+                        <span class="draggable-handle text-gray-400">☰</span>
+                    `;
+                    sectionItem.ondragstart = (e) => {
+                        e.dataTransfer.setData('text/plain', index);
+                    };
+                    sectionItem.ondragover = (e) => e.preventDefault();
+                    sectionItem.ondrop = (e) => {
+                        e.preventDefault();
+                        const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                        const dropIndex = index;
+                        if (draggedIndex !== dropIndex) {
+                            const [draggedSection] = sections.splice(draggedIndex, 1);
+                            sections.splice(dropIndex, 0, draggedSection);
+                            activeSectionIndex = dropIndex;
+                            updateSectionList();
+                            updatePreview();
+                            showProperties();
+                        }
+                    };
+                    sectionItem.onclick = () => {
+                        activeSectionIndex = index;
+                        showProperties();
+                        updateSectionList();
+                    };
+                    sectionListContainer.appendChild(sectionItem);
+                });
+            }
+        }
+
+        // Function to show the properties of the active section
+        function showProperties() {
+            if (activeSectionIndex === null) {
+                propertiesPanel.classList.add('hidden');
+                return;
+            }
+
+            propertiesPanel.classList.remove('hidden');
+            propertyInputs.innerHTML = '';
+            const section = sections[activeSectionIndex];
+            const content = section.content;
+
+            // Helper function to create input fields
+            function createInput(label, key, type = 'text', defaultValue = '', options = null) {
+                const div = document.createElement('div');
+                div.classList.add('mb-2');
+                const labelEl = document.createElement('label');
+                labelEl.textContent = label;
+                labelEl.htmlFor = key;
+                let inputEl;
+                if (type === 'textarea') {
+                    inputEl = document.createElement('textarea');
+                    inputEl.rows = 4;
+                } else if (type === 'select') {
+                    inputEl = document.createElement('select');
+                    options.forEach(opt => {
+                        const optionEl = document.createElement('option');
+                        optionEl.value = opt.value;
+                        optionEl.text = opt.label;
+                        if (content[key] === opt.value) optionEl.selected = true;
+                        inputEl.appendChild(optionEl);
+                    });
+                } else {
+                    inputEl = document.createElement('input');
+                    inputEl.type = type;
+                }
+                inputEl.id = key;
+                inputEl.value = content[key] || defaultValue;
+                inputEl.oninput = (e) => {
+                    let value = e.target.value;
+                    if (['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'fontSize', 'fontSizeTitle', 'fontSizeText', 'borderWidth', 'borderRadius'].includes(key)) {
+                        value = value.match(/^\d+$/) ? `${value}px` : value;
+                    }
+                    content[key] = value;
+                    updatePreview();
+                };
+                div.appendChild(labelEl);
+                div.appendChild(inputEl);
+                propertyInputs.appendChild(div);
+            }
+
+            // Common styles inputs
+            createInput('Background Type', 'backgroundType', 'select', 'color', [
+                {value: 'color', label: 'Color'},
+                {value: 'image', label: 'Image'},
+                {value: 'gradient', label: 'Gradient'}
+            ]);
+            if (content.backgroundType === 'color') {
+                createInput('Background Color', 'backgroundColor', 'color');
+            } else if (content.backgroundType === 'image') {
+                createInput('Background Image URL', 'backgroundImage');
+            } else if (content.backgroundType === 'gradient') {
+                createInput('Background Gradient', 'backgroundGradient'); // e.g., linear-gradient(to right, #ff0000, #00ff00)
+            }
+            createInput('Border Width', 'borderWidth');
+            createInput('Border Color', 'borderColor', 'color');
+            createInput('Border Style', 'borderStyle', 'select', 'solid', [
+                {value: 'solid', label: 'Solid'},
+                {value: 'dashed', label: 'Dashed'},
+                {value: 'dotted', label: 'Dotted'},
+                {value: 'none', label: 'None'}
+            ]);
+            createInput('Border Radius', 'borderRadius');
+            createInput('Padding Top', 'paddingTop');
+            createInput('Padding Bottom', 'paddingBottom');
+            createInput('Padding Left', 'paddingLeft');
+            createInput('Padding Right', 'paddingRight');
+            createInput('Margin Top', 'marginTop');
+            createInput('Margin Bottom', 'marginBottom');
+            createInput('Margin Left', 'marginLeft');
+            createInput('Margin Right', 'marginRight');
+
+            // Type-specific inputs
+            switch (section.type) {
+                case 'header':
+                    createInput('Image URL', 'image');
+                    createInput('Link URL', 'link');
+                    break;
+                case 'title-text':
+                    createInput('Title', 'title');
+                    createInput('Text', 'text', 'textarea');
+                    createInput('Title Font Size', 'fontSizeTitle');
+                    createInput('Text Font Size', 'fontSizeText');
+                    createInput('Title Color', 'textColorTitle', 'color');
+                    createInput('Text Color', 'textColorText', 'color');
+                    createInput('Text Align', 'textAlign', 'select', 'center', [
+                        {value: 'left', label: 'Left'},
+                        {value: 'center', label: 'Center'},
+                        {value: 'right', label: 'Right'}
+                    ]);
+                    break;
+                case 'text-image':
+                    createInput('Image URL', 'image');
+                    createInput('Text', 'text', 'textarea');
+                    createInput('Text Font Size', 'fontSize');
+                    createInput('Text Color', 'textColor', 'color');
+                    createInput('Text Align', 'textAlign', 'select', 'left', [
+                        {value: 'left', label: 'Left'},
+                        {value: 'center', label: 'Center'},
+                        {value: 'right', label: 'Right'}
+                    ]);
+                    createInput('Direction', 'direction', 'select', 'text-left', [
+                        {value: 'text-left', label: 'Text Left, Image Right'},
+                        {value: 'text-right', label: 'Text Right, Image Left'}
+                    ]);
+                    createCheckbox('Show Button', 'showButton');
+                    if (content.showButton) {
+                        createInput('Button Text', 'buttonText');
+                        createInput('Button Link', 'buttonLink');
+                        createInput('Button Background', 'buttonBackground', 'color');
+                        createInput('Button Color', 'buttonColor', 'color');
+                        createInput('Button Font Size', 'buttonFontSize');
+                    }
+                    break;
+                case 'hero':
+                    if (content.backgroundType === 'image') {
+                        createInput('Background Image URL', 'backgroundImage');
+                    }
+                    createInput('Overlay Title', 'overlayTitle');
+                    createInput('Overlay Text', 'overlayText', 'textarea');
+                    createInput('Overlay Text Color', 'overlayTextColor', 'color');
+                    createInput('Overlay Align', 'overlayAlign', 'select', 'center', [
+                        {value: 'left', label: 'Left'},
+                        {value: 'center', label: 'Center'},
+                        {value: 'right', label: 'Right'}
+                    ]);
+                    createCheckbox('Show Overlay Button', 'showOverlayButton');
+                    if (content.showOverlayButton) {
+                        createInput('Overlay Button Text', 'overlayButtonText');
+                        createInput('Overlay Button Link', 'overlayButtonLink');
+                        createInput('Overlay Button Background', 'overlayButtonBackground', 'color');
+                        createInput('Overlay Button Color', 'overlayButtonColor', 'color');
+                    }
+                    break;
+                case 'single-column-blocks':
+                    addBlockProperties(content, 'single');
+                    break;
+                case 'two-column-blocks':
+                    content.columns.forEach((col, colIndex) => {
+                        const colDiv = document.createElement('div');
+                        colDiv.classList.add('mt-4', 'p-2', 'border', 'border-gray-300', 'rounded');
+                        colDiv.innerHTML = `<h3>Column ${colIndex + 1}</h3>`;
+                        propertyInputs.appendChild(colDiv);
+                        addBlockProperties(col, 'multi', colDiv);
+                    });
+                    break;
+                case 'three-column-blocks':
+                    content.columns.forEach((col, colIndex) => {
+                        const colDiv = document.createElement('div');
+                        colDiv.classList.add('mt-4', 'p-2', 'border', 'border-gray-300', 'rounded');
+                        colDiv.innerHTML = `<h3>Column ${colIndex + 1}</h3>`;
+                        propertyInputs.appendChild(colDiv);
+                        addBlockProperties(col, 'multi', colDiv);
+                    });
+                    break;
+            }
+
+            function createCheckbox(label, key) {
+                const div = document.createElement('div');
+                div.classList.add('mb-2');
+                const labelEl = document.createElement('label');
+                labelEl.textContent = label;
+                const inputEl = document.createElement('input');
+                inputEl.type = 'checkbox';
+                inputEl.checked = content[key];
+                inputEl.onchange = (e) => {
+                    content[key] = e.target.checked;
+                    showProperties(); // Refresh to show/hide conditional inputs
+                    updatePreview();
+                };
+                div.appendChild(labelEl);
+                div.appendChild(inputEl);
+                propertyInputs.appendChild(div);
+            }
+
+            function addBlockProperties(blocksObj, mode, container = propertyInputs) {
+                // For single-column, add order and visibility
+                if (mode === 'single') {
+                    const orderSelect = document.createElement('select');
+                    orderSelect.multiple = true;
+                    ['image', 'title', 'text', 'button'].forEach(blockType => {
+                        const opt = document.createElement('option');
+                        opt.value = blockType;
+                        opt.text = blockType.charAt(0).toUpperCase() + blockType.slice(1);
+                        opt.selected = content.order.includes(blockType);
+                        orderSelect.appendChild(opt);
+                    });
+                    orderSelect.onchange = () => {
+                        content.order = Array.from(orderSelect.selectedOptions).map(opt => opt.value);
+                        updatePreview();
+                    };
+                    const orderDiv = document.createElement('div');
+                    orderDiv.classList.add('mb-2');
+                    const orderLabel = document.createElement('label');
+                    orderLabel.textContent = 'Block Order (multi-select and drag to reorder)';
+                    orderDiv.appendChild(orderLabel);
+                    orderDiv.appendChild(orderSelect);
+                    container.appendChild(orderDiv);
+
+                    // Visibility checkboxes
+                    ['image', 'title', 'text', 'button'].forEach(blockType => {
+                        const visDiv = document.createElement('div');
+                        visDiv.classList.add('mb-2');
+                        const visLabel = document.createElement('label');
+                        visLabel.textContent = `Show ${blockType.charAt(0).toUpperCase() + blockType.slice(1)}`;
+                        const visInput = document.createElement('input');
+                        visInput.type = 'checkbox';
+                        visInput.checked = content.visible[blockType];
+                        visInput.onchange = (e) => {
+                            content.visible[blockType] = e.target.checked;
+                            updatePreview();
+                        };
+                        visDiv.appendChild(visLabel);
+                        visDiv.appendChild(visInput);
+                        container.appendChild(visDiv);
+                    });
+                }
+
+                // Block-specific inputs
+                const blockTypes = ['image', 'title', 'text', 'button'];
+                blockTypes.forEach(blockType => {
+                    const block = blocksObj.blocks[blockType];
+                    const blockDiv = document.createElement('div');
+                    blockDiv.classList.add('mt-2', 'p-2', 'bg-gray-100', 'rounded');
+                    blockDiv.innerHTML = `<h4>${blockType.charAt(0).toUpperCase() + blockType.slice(1)} Block</h4>`;
+                    container.appendChild(blockDiv);
+
+                    if (blockType === 'image') {
+                        const imgInput = createInputForBlock('Image URL', 'url', block, blockDiv);
+                        const linkInput = createInputForBlock('Link URL', 'link', block, blockDiv);
+                    } else if (blockType === 'title' || blockType === 'text') {
+                        const textInput = createInputForBlock(blockType === 'title' ? 'Title Text' : 'Text', 'text', block, blockDiv, blockType === 'text' ? 'textarea' : 'text');
+                        const sizeInput = createInputForBlock('Font Size', 'fontSize', block, blockDiv);
+                        const colorInput = createInputForBlock('Color', 'color', block, blockDiv, 'color');
+                        const alignSelect = createInputForBlock('Align', 'align', block, blockDiv, 'select', [
+                            {value: 'left', label: 'Left'},
+                            {value: 'center', label: 'Center'},
+                            {value: 'right', label: 'Right'}
+                        ]);
+                    } else if (blockType === 'button') {
+                        const btnText = createInputForBlock('Button Text', 'text', block, blockDiv);
+                        const btnLink = createInputForBlock('Button Link', 'link', block, blockDiv);
+                        const btnBg = createInputForBlock('Background Color', 'background', block, blockDiv, 'color');
+                        const btnColor = createInputForBlock('Text Color', 'color', block, blockDiv, 'color');
+                        const btnSize = createInputForBlock('Font Size', 'fontSize', block, blockDiv);
+                    }
+                });
+            }
+
+            function createInputForBlock(label, key, block, container, type = 'text', options = null) {
+                const div = document.createElement('div');
+                div.classList.add('mb-1');
+                const labelEl = document.createElement('label');
+                labelEl.textContent = label;
+                labelEl.classList.add('text-xs');
+                let inputEl;
+                if (type === 'textarea') {
+                    inputEl = document.createElement('textarea');
+                    inputEl.rows = 2;
+                } else if (type === 'select') {
+                    inputEl = document.createElement('select');
+                    options.forEach(opt => {
+                        const optionEl = document.createElement('option');
+                        optionEl.value = opt.value;
+                        optionEl.text = opt.label;
+                        if (block[key] === opt.value) optionEl.selected = true;
+                        inputEl.appendChild(optionEl);
+                    });
+                } else {
+                    inputEl = document.createElement('input');
+                    inputEl.type = type;
+                }
+                inputEl.value = block[key];
+                inputEl.oninput = (e) => {
+                    let value = e.target.value;
+                    if (key === 'fontSize') value = value.match(/^\d+$/) ? `${value}px` : value;
+                    block[key] = value;
+                    updatePreview();
+                };
+                div.appendChild(labelEl);
+                div.appendChild(inputEl);
+                container.appendChild(div);
+            }
+        }
+
+        // Function to generate the HTML for a single section
+        function generateSectionHtml(section) {
+            const content = section.content;
+            const backgroundStyle = getBackgroundStyle(content);
+            const borderStyle = `border: ${content.borderWidth} ${content.borderStyle} ${content.borderColor}; border-radius: ${content.borderRadius};`;
+            const paddingStyle = `padding-top: ${content.paddingTop}; padding-bottom: ${content.paddingBottom}; padding-left: ${content.paddingLeft}; padding-right: ${content.paddingRight};`;
+            const marginStyle = `margin-top: ${content.marginTop}; margin-bottom: ${content.marginBottom}; margin-left: ${content.marginLeft}; margin-right: ${content.marginRight};`;
+            const tableStyle = `${backgroundStyle} ${borderStyle} ${marginStyle}`;
+
+            switch (section.type) {
+                case 'header':
+                    return `
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="${tableStyle}" role="presentation">
+                            <tr>
+                                <td style="${paddingStyle}">
+                                    <a href="${content.link}" target="_blank">
+                                        <img src="${content.image}" alt="Header" style="display: block; width: 100%; max-width: ${canvasWidth}px; height: auto; border-radius: ${content.borderRadius};" />
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                    `;
+                case 'title-text':
+                    return `
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="${tableStyle}" role="presentation">
+                            <tr>
+                                <td align="${content.textAlign}" style="${paddingStyle}">
+                                    <h1 style="font-size: ${content.fontSizeTitle}; color: ${content.textColorTitle}; margin: 0;">${content.title}</h1>
+                                    <p style="font-size: ${content.fontSizeText}; color: ${content.textColorText}; margin-top: 10px; line-height: 1.5;">${content.text}</p>
+                                </td>
+                            </tr>
+                        </table>
+                    `;
+                case 'text-image':
+                    const textColumn = `
+                        <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${canvasWidth/2}px;" role="presentation">
+                            <tr>
+                                <td style="${paddingStyle} text-align: ${content.textAlign};">
+                                    <p style="font-size: ${content.fontSize}; color: ${content.textColor}; margin: 0; line-height: 1.5;">${content.text}</p>
+                                    ${content.showButton ? `
+                                        <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 10px;">
+                                            <tr>
+                                                <td style="background-color: ${content.buttonBackground}; border-radius: 4px;">
+                                                    <a href="${content.buttonLink}" target="_blank" style="font-size: ${content.buttonFontSize}; color: ${content.buttonColor}; padding: 10px 20px; display: block; text-decoration: none;">${content.buttonText}</a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    ` : ''}
+                                </td>
+                            </tr>
+                        </table>
+                    `;
+                    const imageColumn = `
+                        <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${canvasWidth/2}px;" role="presentation">
+                            <tr>
+                                <td style="${paddingStyle}">
+                                    <img src="${content.image}" alt="Image" style="display: block; width: 100%; height: auto;">
+                                </td>
+                            </tr>
+                        </table>
+                    `;
+                    const leftColumn = content.direction === 'text-left' ? textColumn : imageColumn;
+                    const rightColumn = content.direction === 'text-left' ? imageColumn : textColumn;
+                    return `
+                        <!--[if mso]>
+                        <table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" style="${tableStyle}" role="presentation">
+                            <tr>
+                                <td style="width: ${canvasWidth/2}px;">
+                        <![endif]-->
+                        ${leftColumn}
+                        <!--[if mso]>
+                                </td>
+                                <td style="width: ${canvasWidth/2}px;">
+                        <![endif]-->
+                        ${rightColumn}
+                        <!--[if mso]>
+                                </td>
+                            </tr>
+                        </table>
+                        <![endif]-->
+                    `;
+                case 'hero':
+                    return `
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="${tableStyle} background-image: url(${content.backgroundImage}); background-size: cover; background-position: center;" role="presentation">
+                            <tr>
+                                <td style="${paddingStyle} text-align: ${content.overlayAlign}; color: ${content.overlayTextColor};">
+                                    <h1 style="font-size: 32px; margin: 0;">${content.overlayTitle}</h1>
+                                    <p style="font-size: 18px; margin-top: 10px; line-height: 1.5;">${content.overlayText}</p>
+                                    ${content.showOverlayButton ? `
+                                        <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
+                                            <tr>
+                                                <td style="background-color: ${content.overlayButtonBackground}; border-radius: 4px;">
+                                                    <a href="${content.overlayButtonLink}" target="_blank" style="font-size: 16px; color: ${content.overlayButtonColor}; padding: 12px 24px; display: block; text-decoration: none;">${content.overlayButtonText}</a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    ` : ''}
+                                </td>
+                            </tr>
+                        </table>
+                    `;
+                case 'single-column-blocks':
+                    const blocksHtml = content.order.filter(type => content.visible[type]).map(type => generateBlockHtml(content.blocks[type], type)).join('');
+                    return `
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="${tableStyle}" role="presentation">
+                            <tr>
+                                <td style="${paddingStyle}">
+                                    ${blocksHtml}
+                                </td>
+                            </tr>
+                        </table>
+                    `;
+                case 'two-column-blocks':
+                    return generateMultiColumnHtml(content, 2);
+                case 'three-column-blocks':
+                    return generateMultiColumnHtml(content, 3);
+            }
+        }
+
+        function generateBlockHtml(block, type) {
+            switch (type) {
+                case 'image':
+                    return `
+                        <a href="${block.link}" target="_blank">
+                            <img src="${block.url}" alt="Image" style="display: block; width: 100%; height: auto; margin-bottom: 10px;">
+                        </a>
+                    `;
+                case 'title':
+                    return `
+                        <h2 style="font-size: ${block.fontSize}; color: ${block.color}; text-align: ${block.align}; margin: 0 0 10px 0;">${block.text}</h2>
+                    `;
+                case 'text':
+                    return `
+                        <p style="font-size: ${block.fontSize}; color: ${block.color}; text-align: ${block.align}; margin: 0 0 10px 0; line-height: 1.5;">${block.text}</p>
+                    `;
+                case 'button':
+                    return `
+                        <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 10px auto;">
+                            <tr>
+                                <td style="background-color: ${block.background}; border-radius: 4px;">
+                                    <a href="${block.link}" target="_blank" style="font-size: ${block.fontSize}; color: ${block.color}; padding: 10px 20px; display: block; text-decoration: none; text-align: center;">${block.text}</a>
+                                </td>
+                            </tr>
+                        </table>
+                    `;
+            }
+        }
+
+        function generateMultiColumnHtml(content, numColumns) {
+            const columnWidth = Math.floor(canvasWidth / numColumns);
+            let columnsHtml = '';
+            let msoHtml = `[if mso]<table width="${canvasWidth}" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr>`;
+            content.columns.forEach((col, index) => {
+                const blocksHtml = Object.keys(col.blocks).map(type => generateBlockHtml(col.blocks[type], type)).join('');
+                columnsHtml += `
+                    <!--[if mso]>
+                        <td style="width: ${columnWidth}px; vertical-align: top;">
+                    <![endif]-->
+                    <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${columnWidth}px; display: inline-block; vertical-align: top;" role="presentation">
+                        <tr>
+                            <td style="padding: 10px; text-align: center;">
+                                ${blocksHtml}
+                            </td>
+                        </tr>
+                    </table>
+                `;
+                msoHtml += `<td style="width: ${columnWidth}px;"></td>`;
+            });
+            msoHtml += `</tr></table><![endif]>`;
+            return `
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="${getBackgroundStyle(content)}" role="presentation">
+                    <tr>
+                        <td>
+                            ${msoHtml.replace(/<\/td><td/g, '</td><td')} 
+                            ${columnsHtml}
+                        </td>
+                    </tr>
+                </table>
+            `;
+        }
+
+        function getBackgroundStyle(content) {
+            if (content.backgroundType === 'color') {
+                return `background-color: ${content.backgroundColor};`;
+            } else if (content.backgroundType === 'image') {
+                return `background-image: url(${content.backgroundImage}); background-size: cover; background-position: center;`;
+            } else if (content.backgroundType === 'gradient') {
+                return `background: ${content.backgroundGradient};`;
+            }
+            return '';
+        }
+
+        // Function to generate the full email HTML document
+        function generateEmailHtml() {
+            const sectionsHtml = sections.map(generateSectionHtml).join('');
+            
+            const fullHtml = `
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Email Template</title>
+    <style type="text/css">
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f6f6f6;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        table {
+            border-spacing: 0;
+            border-collapse: collapse;
+        }
+        td {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .container {
+            width: 100%;
+            max-width: ${canvasWidth}px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border: 0;
+        }
+        .column {
+            display: inline-block;
+            vertical-align: top;
+        }
+        @media only screen and (max-width: ${canvasWidth}px) {
+            .container {
+                width: 100% !important;
+            }
+            .column {
+                display: block !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            img {
+                width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f6f6f6;">
+    <center style="width: 100%; background-color: #f6f6f6;">
+        <table class="container" cellpadding="0" cellspacing="0" border="0" role="presentation">
+            ${sectionsHtml}
+        </table>
+    </center>
+</body>
+</html>
+            `;
+            return fullHtml;
+        }
+
+        // Update the iframe preview and the code output area
+        function updatePreview() {
+            const doc = previewFrame.contentWindow.document;
+            doc.open();
+            doc.write(generateEmailHtml());
+            doc.close();
+            codeOutput.value = generateEmailHtml();
+
+            // Add click listeners to sections in the preview to activate them
+            const previewBody = previewFrame.contentWindow.document.body;
+            const sectionsInPreview = previewBody.querySelectorAll('table[role="presentation"]');
+            sectionsInPreview.forEach((table, index) => {
+                table.style.outline = index === activeSectionIndex ? '2px solid #3b82f6' : 'none';
+                table.onclick = (e) => {
+                    e.stopPropagation();
+                    activeSectionIndex = index;
+                    showProperties();
+                    updateSectionList();
+                    updatePreview();
+                };
+            });
+        }
+
+        // Copy the code to the clipboard
+        function copyCode() {
+            codeOutput.select();
+            document.execCommand('copy');
+            showMessage('HTML code copied to clipboard!');
+        }
+
+        // Save to file
+        function saveToFile() {
+            const htmlContent = generateEmailHtml();
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'email-template.html';
+            a.click();
+            URL.revokeObjectURL(url);
+            showMessage('Template saved as email-template.html!');
+        }
+
+        // Helper function to show a message box
+        function showMessage(msg) {
+            messageBox.textContent = msg;
+            messageBox.style.opacity = '1';
+            setTimeout(() => {
+                messageBox.style.opacity = '0';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
