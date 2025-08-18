@@ -48,7 +48,6 @@
             cursor: grab;
         }
 
-        /* Basic styles for the input panel */
         input[type="text"], input[type="number"], input[type="color"], textarea, select {
             @apply w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500;
         }
@@ -101,6 +100,7 @@
                         <option value="title-text">Title & Text</option>
                         <option value="text-image">2-Col Text/Image</option>
                         <option value="hero">Hero (Image with Overlay)</option>
+                        <option value="image-only">Image Only</option>
                         <option value="single-column-blocks">Single Column Blocks</option>
                         <option value="two-column-blocks">Two Column Blocks</option>
                         <option value="three-column-blocks">Three Column Blocks</option>
@@ -190,7 +190,7 @@
                     type: type,
                     content: getDefaultContent(type)
                 };
-                console.log('Added section:', JSON.stringify(newSection, null, 2)); // Debug log
+                console.log('Added section:', JSON.stringify(newSection, null, 2));
                 sections.push(newSection);
                 activeSectionIndex = sections.length - 1;
                 updateSectionList();
@@ -229,7 +229,8 @@
                             ...commonStyles,
                             image: 'https://placehold.co/600x150/000000/FFFFFF?text=Logo',
                             link: '#',
-                            align: 'center'
+                            align: 'center',
+                            imageWidth: '100%' // Default to 100% width
                         };
                     case 'title-text':
                         return {
@@ -271,7 +272,23 @@
                             overlayButtonText: 'Learn More',
                             overlayButtonLink: '#',
                             overlayButtonBackground: '#ffffff',
-                            overlayButtonColor: '#000000'
+                            overlayButtonColor: '#000000',
+                            overlayButtonAlign: 'center',
+                            overlayButtonWidth: 'auto',
+                            overlayButtonFontSize: '16px',
+                            overlayButtonBorderWidth: '0px',
+                            overlayButtonBorderStyle: 'solid',
+                            overlayButtonBorderColor: '#000000'
+                        };
+                    case 'image-only':
+                        return {
+                            ...commonStyles,
+                            image: 'https://placehold.co/600x300/EEEEEE/808080?text=Image',
+                            link: '#',
+                            borderWidth: '0px',
+                            borderColor: '#000000',
+                            borderStyle: 'solid',
+                            borderRadius: '0px'
                         };
                     case 'single-column-blocks':
                         return {
@@ -320,7 +337,6 @@
             }
         }
 
-        // Function to remove the currently active section
         function removeSection() {
             try {
                 if (activeSectionIndex !== null && confirm('Are you sure you want to remove this section?')) {
@@ -337,7 +353,6 @@
             }
         }
 
-        // Update the list of sections on the left
         function updateSectionList() {
             try {
                 sectionListContainer.innerHTML = '';
@@ -388,7 +403,6 @@
             }
         }
 
-        // Function to show the properties of the active section
         function showProperties() {
             try {
                 if (activeSectionIndex === null) {
@@ -401,7 +415,6 @@
                 const section = sections[activeSectionIndex];
                 const content = section.content;
 
-                // Helper function to create input fields
                 function createInput(label, key, type = 'text', defaultValue = '', options = null, target = content) {
                     const div = document.createElement('div');
                     div.classList.add('mb-2');
@@ -429,7 +442,7 @@
                     inputEl.value = target[key] || defaultValue;
                     inputEl.oninput = (e) => {
                         let value = e.target.value;
-                        if (['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'fontSize', 'fontSizeTitle', 'fontSizeText', 'borderWidth', 'borderRadius'].includes(key)) {
+                        if (['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'fontSize', 'fontSizeTitle', 'fontSizeText', 'borderWidth', 'borderRadius', 'imageWidth', 'overlayButtonWidth', 'overlayButtonFontSize', 'overlayButtonBorderWidth'].includes(key)) {
                             value = value.match(/^\d+$/) ? `${value}px` : value;
                         }
                         target[key] = value;
@@ -437,7 +450,7 @@
                     };
                     inputEl.onblur = (e) => {
                         let value = e.target.value;
-                        if (['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'fontSize', 'fontSizeTitle', 'fontSizeText', 'borderWidth', 'borderRadius'].includes(key)) {
+                        if (['paddingTop', 'paddingBottom', 'paddingLeft', 'paddingRight', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'fontSize', 'fontSizeTitle', 'fontSizeText', 'borderWidth', 'borderRadius', 'imageWidth', 'overlayButtonWidth', 'overlayButtonFontSize', 'overlayButtonBorderWidth'].includes(key)) {
                             if (!value.match(/^\d+px$/)) {
                                 value = value.replace(/[^0-9]/g, '');
                                 value = value ? `${value}px` : '0px';
@@ -501,6 +514,7 @@
                             {value: 'center', label: 'Center'},
                             {value: 'right', label: 'Right'}
                         ]);
+                        createInput('Image Width (px)', 'imageWidth');
                         break;
                     case 'title-text':
                         createInput('Title', 'title');
@@ -556,7 +570,35 @@
                             createInput('Overlay Button Link', 'overlayButtonLink');
                             createInput('Overlay Button Background', 'overlayButtonBackground', 'color');
                             createInput('Overlay Button Color', 'overlayButtonColor', 'color');
+                            createInput('Overlay Button Align', 'overlayButtonAlign', 'select', 'center', [
+                                {value: 'left', label: 'Left'},
+                                {value: 'center', label: 'Center'},
+                                {value: 'right', label: 'Right'}
+                            ]);
+                            createInput('Overlay Button Width (px)', 'overlayButtonWidth');
+                            createInput('Overlay Button Font Size', 'overlayButtonFontSize');
+                            createInput('Overlay Button Border Width', 'overlayButtonBorderWidth');
+                            createInput('Overlay Button Border Color', 'overlayButtonBorderColor', 'color');
+                            createInput('Overlay Button Border Style', 'overlayButtonBorderStyle', 'select', 'solid', [
+                                {value: 'solid', label: 'Solid'},
+                                {value: 'dashed', label: 'Dashed'},
+                                {value: 'dotted', label: 'Dotted'},
+                                {value: 'none', label: 'None'}
+                            ]);
                         }
+                        break;
+                    case 'image-only':
+                        createInput('Image URL', 'image');
+                        createInput('Link URL', 'link');
+                        createInput('Border Width', 'borderWidth');
+                        createInput('Border Color', 'borderColor', 'color');
+                        createInput('Border Style', 'borderStyle', 'select', 'solid', [
+                            {value: 'solid', label: 'Solid'},
+                            {value: 'dashed', label: 'Dashed'},
+                            {value: 'dotted', label: 'Dotted'},
+                            {value: 'none', label: 'None'}
+                        ]);
+                        createInput('Border Radius', 'borderRadius');
                         break;
                     case 'single-column-blocks':
                         addBlockProperties(content, 'single');
@@ -685,7 +727,6 @@
             }
         }
 
-        // Function to generate the HTML for a single section
         function generateSectionHtml(section) {
             try {
                 const content = section.content;
@@ -702,7 +743,7 @@
                                 <tr>
                                     <td align="${content.align}" style="${paddingStyle}">
                                         <a href="${content.link}" target="_blank">
-                                            <img src="${content.image}" alt="Header" style="display: block; width: 100%; max-width: ${canvasWidth}px; height: auto; border-radius: ${content.borderRadius};" />
+                                            <img src="${content.image}" alt="Header" style="display: block; width: ${content.imageWidth}; max-width: ${canvasWidth}px; height: auto; border-radius: ${content.borderRadius};" />
                                         </a>
                                     </td>
                                 </tr>
@@ -774,21 +815,34 @@
                             </table>
                         `;
                     case 'hero':
+                        const buttonHtml = content.showOverlayButton ? `
+                            <table cellpadding="0" cellspacing="0" border="0" align="${content.overlayButtonAlign}" style="margin-top: 20px; width: ${content.overlayButtonWidth};">
+                                <tr>
+                                    <td style="background-color: ${content.overlayButtonBackground}; border: ${content.overlayButtonBorderWidth} ${content.overlayButtonBorderStyle} ${content.overlayButtonBorderColor}; border-radius: 4px;">
+                                        <a href="${content.overlayButtonLink}" target="_blank" style="font-size: ${content.overlayButtonFontSize}; color: ${content.overlayButtonColor}; padding: 12px 24px; display: block; text-decoration: none; text-align: center;">${content.overlayButtonText}</a>
+                                    </td>
+                                </tr>
+                            </table>
+                        ` : '';
                         return `
                             <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle} background-image: url(${content.backgroundImage}); background-size: cover; background-position: center;" role="presentation">
                                 <tr>
                                     <td style="${paddingStyle} text-align: ${content.overlayAlign}; color: ${content.overlayTextColor};">
                                         <h1 style="font-size: 32px; margin: 0;">${content.overlayTitle}</h1>
                                         <p style="font-size: 18px; margin-top: 10px; line-height: 1.5;">${content.overlayText}</p>
-                                        ${content.showOverlayButton ? `
-                                            <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
-                                                <tr>
-                                                    <td style="background-color: ${content.overlayButtonBackground}; border-radius: 4px;">
-                                                        <a href="${content.overlayButtonLink}" target="_blank" style="font-size: 16px; color: ${content.overlayButtonColor}; padding: 12px 24px; display: block; text-decoration: none;">${content.overlayButtonText}</a>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        ` : ''}
+                                        ${buttonHtml}
+                                    </td>
+                                </tr>
+                            </table>
+                        `;
+                    case 'image-only':
+                        return `
+                            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
+                                <tr>
+                                    <td style="${paddingStyle}">
+                                        <a href="${content.link}" target="_blank">
+                                            <img src="${content.image}" alt="Image" style="display: block; width: 100%; max-width: ${canvasWidth}px; height: auto; border: ${content.borderWidth} ${content.borderStyle} ${content.borderColor}; border-radius: ${content.borderRadius};" />
+                                        </a>
                                     </td>
                                 </tr>
                             </table>
@@ -872,8 +926,7 @@
                 if (!content.columns || !Array.isArray(content.columns)) {
                     throw new Error('Columns array is undefined or not an array');
                 }
-                // Adjust column width to account for padding
-                const columnWidth = Math.floor((canvasWidth - (numColumns * 20)) / numColumns); // Subtract padding (10px per side per column)
+                const columnWidth = Math.floor((canvasWidth - (numColumns * 20)) / numColumns);
                 let columnsHtml = '';
                 let msoHtml = `<table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" role="presentation"><tr>`;
                 content.columns.forEach((col, index) => {
@@ -887,8 +940,8 @@
                         .map(type => generateBlockHtml(col.blocks[type], type))
                         .join('');
                     columnsHtml += `
-                        <td style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
-                            <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top;" role="presentation">
+                        <td class="column" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
+                            <table cellpadding="0" cellspacing="0" border="0" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top;" role="presentation">
                                 <tr>
                                     <td style="padding: 10px;">
                                         ${blocksHtml}
@@ -933,7 +986,6 @@
             }
         }
 
-        // Function to generate the full email HTML document
         function generateEmailHtml() {
             try {
                 const sectionsHtml = sections.map(generateSectionHtml).join('');
@@ -984,6 +1036,7 @@
                 display: block !important;
                 width: 100% !important;
                 max-width: 100% !important;
+                padding: 10px 0 !important;
             }
             img {
                 width: 100% !important;
@@ -1008,7 +1061,6 @@
             }
         }
 
-        // Update the iframe preview and the code output area
         function updatePreview() {
             try {
                 const doc = previewFrame.contentWindow.document;
@@ -1017,7 +1069,6 @@
                 doc.close();
                 codeOutput.value = generateEmailHtml();
 
-                // Add click listeners to sections in the preview to activate them
                 const previewBody = previewFrame.contentWindow.document.body;
                 const sectionsInPreview = previewBody.querySelectorAll('table[role="presentation"]');
                 sectionsInPreview.forEach((table, index) => {
@@ -1036,7 +1087,6 @@
             }
         }
 
-        // Copy the code to the clipboard
         function copyCode() {
             try {
                 codeOutput.select();
@@ -1048,7 +1098,6 @@
             }
         }
 
-        // Save to file
         function saveToFile() {
             try {
                 const htmlContent = generateEmailHtml();
@@ -1066,7 +1115,6 @@
             }
         }
 
-        // Helper function to show a message box
         function showMessage(msg) {
             messageBox.textContent = msg;
             messageBox.style.opacity = '1';
