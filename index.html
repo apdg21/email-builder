@@ -821,44 +821,58 @@
                             </table>
                         `;
                     case 'text-image':
-                        const columnWidth = Math.floor((canvasWidth - 40) / 2); // Account for padding
-                        const textContent = `
-                            <div style="font-size: ${content.fontSize}; color: ${content.textColor}; text-align: ${content.textAlign}; line-height: 1.5; margin: 0;">
-                                ${content.text}
-                                ${content.showButton ? `
-                                    <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 15px;">
-                                        <tr>
-                                            <td style="background-color: ${content.buttonBackground}; border-radius: 4px;">
-                                                <a href="${content.buttonLink}" target="_blank" style="font-size: ${content.buttonFontSize}; color: ${content.buttonColor}; padding: ${content.buttonPadding}; display: inline-block; text-decoration: none;">${content.buttonText}</a>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                ` : ''}
-                            </div>
-                        `;
-                        const imageContent = `
-                            <img src="${content.image}" alt="Image" style="display: block; width: 100%; max-width: ${columnWidth}px; height: auto;" />
-                        `;
-                        const leftContent = content.direction === 'text-left' ? textContent : imageContent;
-                        const rightContent = content.direction === 'text-left' ? imageContent : textContent;
-                        return `
-                            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
-                                <tr>
-                                    <td style="${paddingStyle}">
-                                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; max-width: ${canvasWidth}px; border-collapse: collapse;">
-                                            <tr>
-                                                <td class="column" width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; display: inline-block; padding: 0 10px; box-sizing: border-box;">
-                                                    ${leftContent}
-                                                </td>
-                                                <td class="column" width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; display: inline-block; padding: 0 10px; box-sizing: border-box;">
-                                                    ${rightContent}
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                            </table>
-                        `;
+    const columnWidth = Math.floor((canvasWidth - 40) / 2); // Account for padding
+    const textContent = `
+        <div style="font-size: ${content.fontSize}; color: ${content.textColor}; text-align: ${content.textAlign}; line-height: 1.5; margin: 0;">
+            ${content.text}
+            ${content.showButton ? `
+                <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 15px;">
+                    <tr>
+                        <td style="background-color: ${content.buttonBackground}; border-radius: 4px;">
+                            <a href="${content.buttonLink}" target="_blank" style="font-size: ${content.buttonFontSize}; color: ${content.buttonColor}; padding: ${content.buttonPadding}; display: inline-block; text-decoration: none;">${content.buttonText}</a>
+                        </td>
+                    </tr>
+                </table>
+            ` : ''}
+        </div>
+    `;
+    const imageContent = `
+        <img src="${content.image}" alt="Image" style="display: block; width: 100%; max-width: ${columnWidth}px; height: auto;" />
+    `;
+    const leftContent = content.direction === 'text-left' ? textContent : imageContent;
+    const rightContent = content.direction === 'text-left' ? imageContent : textContent;
+    return `
+        <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
+            <tr>
+                <td style="${paddingStyle}">
+                    <!--[if mso]>
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                            <td width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
+                                ${leftContent}
+                            </td>
+                            <td width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
+                                ${rightContent}
+                            </td>
+                        </tr>
+                    </table>
+                    <![endif]-->
+                    <!--[if !mso]><!-->
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; max-width: ${canvasWidth}px; border-collapse: collapse;">
+                        <tr>
+                            <td class="column" width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; display: inline-block; padding: 0 10px; box-sizing: border-box;">
+                                ${leftContent}
+                            </td>
+                            <td class="column" width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; display: inline-block; padding: 0 10px; box-sizing: border-box;">
+                                ${rightContent}
+                            </td>
+                        </tr>
+                    </table>
+                    <!--<![endif]-->
+                </td>
+            </tr>
+        </table>
+    `;
                     case 'hero':
                         const buttonHtml = content.showOverlayButton ? `
                             <table cellpadding="0" cellspacing="0" border="0" align="${content.overlayButtonAlign}" style="margin-top: 20px; width: ${content.overlayButtonWidth};">
@@ -967,48 +981,49 @@
         }
 
         function generateMultiColumnHtml(content, numColumns) {
-            try {
-                if (!content.columns || !Array.isArray(content.columns)) {
-                    throw new Error('Columns array is undefined or not an array');
-                }
-                const columnWidth = Math.floor((canvasWidth - (numColumns * 20)) / numColumns);
-                let columnsHtml = '';
-                
-                content.columns.forEach((col, index) => {
-                    if (!col || !col.blocks || typeof col.blocks !== 'object') {
-                        col = { blocks: getDefaultBlocks() };
-                    }
-                    const blocksHtml = Object.keys(col.blocks)
-                        .filter(type => col.blocks[type])
-                        .map(type => generateBlockHtml(col.blocks[type], type))
-                        .join('');
-                    columnsHtml += `
-                        <td class="column" width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; display: inline-block; padding: 0 10px; box-sizing: border-box;">
-                            ${blocksHtml}
-                        </td>
-                    `;
-                });
-                
-                const tableStyle = `width: 100%; max-width: ${canvasWidth}px; min-width: 0; ${getBackgroundStyle(content)} border: ${content.borderWidth} ${content.borderStyle} ${content.borderColor}; border-radius: ${content.borderRadius}; margin-top: ${content.marginTop}; margin-bottom: ${content.marginBottom}; margin-left: ${content.marginLeft}; margin-right: ${content.marginRight};`;
-                
-                return `
-                    <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
-                        <tr>
-                            <td style="${paddingStyle}">
-                                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; max-width: ${canvasWidth}px; border-collapse: collapse;">
-                                    <tr>
-                                        ${columnsHtml}
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                    </table>
-                `;
-            } catch (error) {
-                console.error('Error generating multi-column HTML:', error);
-                return `<div>Error rendering multi-column section: ${error.message}</div>`;
-            }
+    try {
+        if (!content.columns || !Array.isArray(content.columns)) {
+            throw new Error('Columns array is undefined or not an array');
         }
+        const paddingStyle = `padding-top: ${content.paddingTop}; padding-bottom: ${content.paddingBottom}; padding-left: ${content.paddingLeft}; padding-right: ${content.paddingRight};`;
+        const columnWidth = Math.floor((canvasWidth - (numColumns * 20)) / numColumns);
+        let columnsHtml = '';
+        
+        content.columns.forEach((col, index) => {
+            if (!col || !col.blocks || typeof col.blocks !== 'object') {
+                col = { blocks: getDefaultBlocks() };
+            }
+            const blocksHtml = Object.keys(col.blocks)
+                .filter(type => col.blocks[type])
+                .map(type => generateBlockHtml(col.blocks[type], type))
+                .join('');
+            columnsHtml += `
+                <td class="column" width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; display: inline-block; padding: 0 10px; box-sizing: border-box;">
+                    ${blocksHtml}
+                </td>
+            `;
+        });
+        
+        const tableStyle = `width: 100%; max-width: ${canvasWidth}px; min-width: 0; ${getBackgroundStyle(content)} border: ${content.borderWidth} ${content.borderStyle} ${content.borderColor}; border-radius: ${content.borderRadius}; margin-top: ${content.marginTop}; margin-bottom: ${content.marginBottom}; margin-left: ${content.marginLeft}; margin-right: ${content.marginRight};`;
+        
+        return `
+            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
+                <tr>
+                    <td style="${paddingStyle}">
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; max-width: ${canvasWidth}px; border-collapse: collapse;">
+                            <tr>
+                                ${columnsHtml}
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        `;
+    } catch (error) {
+        console.error('Error generating multi-column HTML:', error);
+        return `<div>Error rendering multi-column section: ${error.message}</div>`;
+    }
+}
 
         function getBackgroundStyle(content) {
             try {
