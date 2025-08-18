@@ -7,7 +7,6 @@
     <!-- Tailwind CSS for the application UI. The email template itself will use tables and inline styles. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom styles for the app's UI */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
@@ -115,7 +114,6 @@
             <div id="sections-list" class="mb-6">
                 <h2 class="text-lg font-semibold mb-2">Sections</h2>
                 <div id="section-list-container" class="space-y-2">
-                    <!-- Section list items will be generated here -->
                     <div class="text-center text-gray-400 p-4">Add a section to get started</div>
                 </div>
             </div>
@@ -123,9 +121,7 @@
             <!-- Active Section Properties -->
             <div id="properties-panel" class="p-4 bg-gray-50 rounded-lg hidden">
                 <h2 class="text-lg font-semibold mb-2">Section Properties</h2>
-                <div id="property-inputs">
-                    <!-- Dynamic inputs will be generated here -->
-                </div>
+                <div id="property-inputs"></div>
                 <button onclick="removeSection()" class="mt-4 w-full p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition duration-300">
                     Remove Section
                 </button>
@@ -145,8 +141,15 @@
         </div>
 
         <!-- Right Panel: Live Preview -->
-        <div class="w-full lg:w-2/3 p-4 bg-gray-200 flex justify-center items-start">
-            <iframe id="preview-frame" class="preview-iframe rounded-lg shadow-lg"></iframe>
+        <div class="w-full lg:w-2/3 p-4 bg-gray-200">
+            <div class="flex justify-center mb-4">
+                <button id="view-toggle" onclick="toggleView()" class="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition duration-300">
+                    Switch to Mobile View
+                </button>
+            </div>
+            <div class="flex justify-center">
+                <iframe id="preview-frame" class="preview-iframe rounded-lg shadow-lg"></iframe>
+            </div>
         </div>
     </div>
     
@@ -157,6 +160,7 @@
         let sections = [];
         let activeSectionIndex = null;
         let canvasWidth = 600;
+        let isMobileView = false;
 
         // Get DOM elements
         const previewFrame = document.getElementById('preview-frame');
@@ -167,6 +171,7 @@
         const sectionTypeSelect = document.getElementById('section-type-select');
         const messageBox = document.getElementById('message-box');
         const canvasWidthInput = document.getElementById('canvas-width');
+        const viewToggle = document.getElementById('view-toggle');
 
         // Add event listener for canvas width input
         canvasWidthInput.oninput = (e) => {
@@ -174,10 +179,16 @@
             updatePreview();
         };
 
+        // Toggle between mobile and PC view
+        function toggleView() {
+            isMobileView = !isMobileView;
+            viewToggle.textContent = isMobileView ? 'Switch to PC View' : 'Switch to Mobile View';
+            updatePreview();
+        }
+
         // Initial render of the preview
         updatePreview();
 
-        // Function to add a new section
         function addSection() {
             try {
                 const type = sectionTypeSelect.value;
@@ -230,7 +241,7 @@
                             image: 'https://placehold.co/600x150/000000/FFFFFF?text=Logo',
                             link: '#',
                             align: 'center',
-                            imageWidth: '100%' // Default to 100% width
+                            imageWidth: '100%'
                         };
                     case 'title-text':
                         return {
@@ -473,156 +484,6 @@
                     propertyInputs.appendChild(div);
                 }
 
-                // Common styles inputs
-                createInput('Background Type', 'backgroundType', 'select', 'color', [
-                    {value: 'color', label: 'Color'},
-                    {value: 'image', label: 'Image'},
-                    {value: 'gradient', label: 'Gradient'}
-                ]);
-                if (content.backgroundType === 'color') {
-                    createInput('Background Color', 'backgroundColor', 'color');
-                } else if (content.backgroundType === 'image') {
-                    createInput('Background Image URL', 'backgroundImage');
-                } else if (content.backgroundType === 'gradient') {
-                    createInput('Background Gradient', 'backgroundGradient');
-                }
-                createInput('Border Width', 'borderWidth');
-                createInput('Border Color', 'borderColor', 'color');
-                createInput('Border Style', 'borderStyle', 'select', 'solid', [
-                    {value: 'solid', label: 'Solid'},
-                    {value: 'dashed', label: 'Dashed'},
-                    {value: 'dotted', label: 'Dotted'},
-                    {value: 'none', label: 'None'}
-                ]);
-                createInput('Border Radius', 'borderRadius');
-                createInput('Padding Top', 'paddingTop');
-                createInput('Padding Bottom', 'paddingBottom');
-                createInput('Padding Left', 'paddingLeft');
-                createInput('Padding Right', 'paddingRight');
-                createInput('Margin Top', 'marginTop');
-                createInput('Margin Bottom', 'marginBottom');
-                createInput('Margin Left', 'marginLeft');
-                createInput('Margin Right', 'marginRight');
-
-                // Type-specific inputs
-                switch (section.type) {
-                    case 'header':
-                        createInput('Image URL', 'image');
-                        createInput('Link URL', 'link');
-                        createInput('Align', 'align', 'select', 'center', [
-                            {value: 'left', label: 'Left'},
-                            {value: 'center', label: 'Center'},
-                            {value: 'right', label: 'Right'}
-                        ]);
-                        createInput('Image Width (px)', 'imageWidth');
-                        break;
-                    case 'title-text':
-                        createInput('Title', 'title');
-                        createInput('Text', 'text', 'textarea');
-                        createInput('Title Font Size', 'fontSizeTitle');
-                        createInput('Text Font Size', 'fontSizeText');
-                        createInput('Title Color', 'textColorTitle', 'color');
-                        createInput('Text Color', 'textColorText', 'color');
-                        createInput('Text Align', 'textAlign', 'select', 'center', [
-                            {value: 'left', label: 'Left'},
-                            {value: 'center', label: 'Center'},
-                            {value: 'right', label: 'Right'}
-                        ]);
-                        break;
-                    case 'text-image':
-                        createInput('Image URL', 'image');
-                        createInput('Text', 'text', 'textarea');
-                        createInput('Text Font Size', 'fontSize');
-                        createInput('Text Color', 'textColor', 'color');
-                        createInput('Text Align', 'textAlign', 'select', 'left', [
-                            {value: 'left', label: 'Left'},
-                            {value: 'center', label: 'Center'},
-                            {value: 'right', label: 'Right'}
-                        ]);
-                        createInput('Direction', 'direction', 'select', 'text-left', [
-                            {value: 'text-left', label: 'Text Left, Image Right'},
-                            {value: 'text-right', label: 'Text Right, Image Left'}
-                        ]);
-                        createCheckbox('Show Button', 'showButton');
-                        if (content.showButton) {
-                            createInput('Button Text', 'buttonText');
-                            createInput('Button Link', 'buttonLink');
-                            createInput('Button Background', 'buttonBackground', 'color');
-                            createInput('Button Color', 'buttonColor', 'color');
-                            createInput('Button Font Size', 'buttonFontSize');
-                        }
-                        break;
-                    case 'hero':
-                        if (content.backgroundType === 'image') {
-                            createInput('Background Image URL', 'backgroundImage');
-                        }
-                        createInput('Overlay Title', 'overlayTitle');
-                        createInput('Overlay Text', 'overlayText', 'textarea');
-                        createInput('Overlay Text Color', 'overlayTextColor', 'color');
-                        createInput('Overlay Align', 'overlayAlign', 'select', 'center', [
-                            {value: 'left', label: 'Left'},
-                            {value: 'center', label: 'Center'},
-                            {value: 'right', label: 'Right'}
-                        ]);
-                        createCheckbox('Show Overlay Button', 'showOverlayButton');
-                        if (content.showOverlayButton) {
-                            createInput('Overlay Button Text', 'overlayButtonText');
-                            createInput('Overlay Button Link', 'overlayButtonLink');
-                            createInput('Overlay Button Background', 'overlayButtonBackground', 'color');
-                            createInput('Overlay Button Color', 'overlayButtonColor', 'color');
-                            createInput('Overlay Button Align', 'overlayButtonAlign', 'select', 'center', [
-                                {value: 'left', label: 'Left'},
-                                {value: 'center', label: 'Center'},
-                                {value: 'right', label: 'Right'}
-                            ]);
-                            createInput('Overlay Button Width (px)', 'overlayButtonWidth');
-                            createInput('Overlay Button Font Size', 'overlayButtonFontSize');
-                            createInput('Overlay Button Border Width', 'overlayButtonBorderWidth');
-                            createInput('Overlay Button Border Color', 'overlayButtonBorderColor', 'color');
-                            createInput('Overlay Button Border Style', 'overlayButtonBorderStyle', 'select', 'solid', [
-                                {value: 'solid', label: 'Solid'},
-                                {value: 'dashed', label: 'Dashed'},
-                                {value: 'dotted', label: 'Dotted'},
-                                {value: 'none', label: 'None'}
-                            ]);
-                        }
-                        break;
-                    case 'image-only':
-                        createInput('Image URL', 'image');
-                        createInput('Link URL', 'link');
-                        createInput('Border Width', 'borderWidth');
-                        createInput('Border Color', 'borderColor', 'color');
-                        createInput('Border Style', 'borderStyle', 'select', 'solid', [
-                            {value: 'solid', label: 'Solid'},
-                            {value: 'dashed', label: 'Dashed'},
-                            {value: 'dotted', label: 'Dotted'},
-                            {value: 'none', label: 'None'}
-                        ]);
-                        createInput('Border Radius', 'borderRadius');
-                        break;
-                    case 'single-column-blocks':
-                        addBlockProperties(content, 'single');
-                        break;
-                    case 'two-column-blocks':
-                        content.columns.forEach((col, colIndex) => {
-                            const colDiv = document.createElement('div');
-                            colDiv.classList.add('mt-4', 'p-2', 'border', 'border-gray-300', 'rounded');
-                            colDiv.innerHTML = `<h3>Column ${colIndex + 1}</h3>`;
-                            propertyInputs.appendChild(colDiv);
-                            addBlockProperties(col, 'multi', colDiv);
-                        });
-                        break;
-                    case 'three-column-blocks':
-                        content.columns.forEach((col, colIndex) => {
-                            const colDiv = document.createElement('div');
-                            colDiv.classList.add('mt-4', 'p-2', 'border', 'border-gray-300', 'rounded');
-                            colDiv.innerHTML = `<h3>Column ${colIndex + 1}</h3>`;
-                            propertyInputs.appendChild(colDiv);
-                            addBlockProperties(col, 'multi', colDiv);
-                        });
-                        break;
-                }
-
                 function createCheckbox(label, key) {
                     const div = document.createElement('div');
                     div.classList.add('mb-2');
@@ -721,6 +582,155 @@
                         }
                     });
                 }
+
+                // Common styles inputs
+                createInput('Background Type', 'backgroundType', 'select', 'color', [
+                    {value: 'color', label: 'Color'},
+                    {value: 'image', label: 'Image'},
+                    {value: 'gradient', label: 'Gradient'}
+                ]);
+                if (content.backgroundType === 'color') {
+                    createInput('Background Color', 'backgroundColor', 'color');
+                } else if (content.backgroundType === 'image') {
+                    createInput('Background Image URL', 'backgroundImage');
+                } else if (content.backgroundType === 'gradient') {
+                    createInput('Background Gradient', 'backgroundGradient');
+                }
+                createInput('Border Width', 'borderWidth');
+                createInput('Border Color', 'borderColor', 'color');
+                createInput('Border Style', 'borderStyle', 'select', 'solid', [
+                    {value: 'solid', label: 'Solid'},
+                    {value: 'dashed', label: 'Dashed'},
+                    {value: 'dotted', label: 'Dotted'},
+                    {value: 'none', label: 'None'}
+                ]);
+                createInput('Border Radius', 'borderRadius');
+                createInput('Padding Top', 'paddingTop');
+                createInput('Padding Bottom', 'paddingBottom');
+                createInput('Padding Left', 'paddingLeft');
+                createInput('Padding Right', 'paddingRight');
+                createInput('Margin Top', 'marginTop');
+                createInput('Margin Bottom', 'marginBottom');
+                createInput('Margin Left', 'marginLeft');
+                createInput('Margin Right', 'marginRight');
+
+                switch (section.type) {
+                    case 'header':
+                        createInput('Image URL', 'image');
+                        createInput('Link URL', 'link');
+                        createInput('Align', 'align', 'select', 'center', [
+                            {value: 'left', label: 'Left'},
+                            {value: 'center', label: 'Center'},
+                            {value: 'right', label: 'Right'}
+                        ]);
+                        createInput('Image Width (px)', 'imageWidth');
+                        break;
+                    case 'title-text':
+                        createInput('Title', 'title');
+                        createInput('Text', 'text', 'textarea');
+                        createInput('Title Font Size', 'fontSizeTitle');
+                        createInput('Text Font Size', 'fontSizeText');
+                        createInput('Title Color', 'textColorTitle', 'color');
+                        createInput('Text Color', 'textColorText', 'color');
+                        createInput('Text Align', 'textAlign', 'select', 'center', [
+                            {value: 'left', label: 'Left'},
+                            {value: 'center', label: 'Center'},
+                            {value: 'right', label: 'Right'}
+                        ]);
+                        break;
+                    case 'text-image':
+                        createInput('Image URL', 'image');
+                        createInput('Text', 'text', 'textarea');
+                        createInput('Text Font Size', 'fontSize');
+                        createInput('Text Color', 'textColor', 'color');
+                        createInput('Text Align', 'textAlign', 'select', 'left', [
+                            {value: 'left', label: 'Left'},
+                            {value: 'center', label: 'Center'},
+                            {value: 'right', label: 'Right'}
+                        ]);
+                        createInput('Direction', 'direction', 'select', 'text-left', [
+                            {value: 'text-left', label: 'Text Left, Image Right'},
+                            {value: 'text-right', label: 'Image Left, Text Right'}
+                        ]);
+                        createCheckbox('Show Button', 'showButton');
+                        if (content.showButton) {
+                            createInput('Button Text', 'buttonText');
+                            createInput('Button Link', 'buttonLink');
+                            createInput('Button Background', 'buttonBackground', 'color');
+                            createInput('Button Color', 'buttonColor', 'color');
+                            createInput('Button Font Size', 'buttonFontSize');
+                        }
+                        break;
+                    case 'hero':
+                        if (content.backgroundType === 'image') {
+                            createInput('Background Image URL', 'backgroundImage');
+                        }
+                        createInput('Overlay Title', 'overlayTitle');
+                        createInput('Overlay Text', 'overlayText', 'textarea');
+                        createInput('Overlay Text Color', 'overlayTextColor', 'color');
+                        createInput('Overlay Align', 'overlayAlign', 'select', 'center', [
+                            {value: 'left', label: 'Left'},
+                            {value: 'center', label: 'Center'},
+                            {value: 'right', label: 'Right'}
+                        ]);
+                        createCheckbox('Show Overlay Button', 'showOverlayButton');
+                        if (content.showOverlayButton) {
+                            createInput('Overlay Button Text', 'overlayButtonText');
+                            createInput('Overlay Button Link', 'overlayButtonLink');
+                            createInput('Overlay Button Background', 'overlayButtonBackground', 'color');
+                            createInput('Overlay Button Color', 'overlayButtonColor', 'color');
+                            createInput('Overlay Button Align', 'overlayButtonAlign', 'select', 'center', [
+                                {value: 'left', label: 'Left'},
+                                {value: 'center', label: 'Center'},
+                                {value: 'right', label: 'Right'}
+                            ]);
+                            createInput('Overlay Button Width (px)', 'overlayButtonWidth');
+                            createInput('Overlay Button Font Size', 'overlayButtonFontSize');
+                            createInput('Overlay Button Border Width', 'overlayButtonBorderWidth');
+                            createInput('Overlay Button Border Color', 'overlayButtonBorderColor', 'color');
+                            createInput('Overlay Button Border Style', 'overlayButtonBorderStyle', 'select', 'solid', [
+                                {value: 'solid', label: 'Solid'},
+                                {value: 'dashed', label: 'Dashed'},
+                                {value: 'dotted', label: 'Dotted'},
+                                {value: 'none', label: 'None'}
+                            ]);
+                        }
+                        break;
+                    case 'image-only':
+                        createInput('Image URL', 'image');
+                        createInput('Link URL', 'link');
+                        createInput('Border Width', 'borderWidth');
+                        createInput('Border Color', 'borderColor', 'color');
+                        createInput('Border Style', 'borderStyle', 'select', 'solid', [
+                            {value: 'solid', label: 'Solid'},
+                            {value: 'dashed', label: 'Dashed'},
+                            {value: 'dotted', label: 'Dotted'},
+                            {value: 'none', label: 'None'}
+                        ]);
+                        createInput('Border Radius', 'borderRadius');
+                        break;
+                    case 'single-column-blocks':
+                        addBlockProperties(content, 'single');
+                        break;
+                    case 'two-column-blocks':
+                        content.columns.forEach((col, colIndex) => {
+                            const colDiv = document.createElement('div');
+                            colDiv.classList.add('mt-4', 'p-2', 'border', 'border-gray-300', 'rounded');
+                            colDiv.innerHTML = `<h3>Column ${colIndex + 1}</h3>`;
+                            propertyInputs.appendChild(colDiv);
+                            addBlockProperties(col, 'multi', colDiv);
+                        });
+                        break;
+                    case 'three-column-blocks':
+                        content.columns.forEach((col, colIndex) => {
+                            const colDiv = document.createElement('div');
+                            colDiv.classList.add('mt-4', 'p-2', 'border', 'border-gray-300', 'rounded');
+                            colDiv.innerHTML = `<h3>Column ${colIndex + 1}</h3>`;
+                            propertyInputs.appendChild(colDiv);
+                            addBlockProperties(col, 'multi', colDiv);
+                        });
+                        break;
+                }
             } catch (error) {
                 console.error('Error showing properties:', error);
                 showMessage('Error showing properties: ' + error.message);
@@ -761,58 +771,58 @@
                             </table>
                         `;
                     case 'text-image':
+                        const columnWidth = Math.floor((canvasWidth - 20) / 2); // Account for 10px padding per side
                         const textColumn = `
-                            <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${canvasWidth/2}px;" role="presentation">
-                                <tr>
-                                    <td style="${paddingStyle} text-align: ${content.textAlign};">
-                                        <p style="font-size: ${content.fontSize}; color: ${content.textColor}; margin: 0; line-height: 1.5;">${content.text}</p>
-                                        ${content.showButton ? `
-                                            <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 10px;">
-                                                <tr>
-                                                    <td style="background-color: ${content.buttonBackground}; border-radius: 4px;">
-                                                        <a href="${content.buttonLink}" target="_blank" style="font-size: ${content.buttonFontSize}; color: ${content.buttonColor}; padding: 10px 20px; display: block; text-decoration: none;">${content.buttonText}</a>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        ` : ''}
-                                    </td>
-                                </tr>
-                            </table>
+                            <td class="column" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
+                                <table cellpadding="0" cellspacing="0" border="0" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top;" role="presentation">
+                                    <tr>
+                                        <td style="${paddingStyle} text-align: ${content.textAlign};">
+                                            <p style="font-size: ${content.fontSize}; color: ${content.textColor}; margin: 0; line-height: 1.5;">${content.text}</p>
+                                            ${content.showButton ? `
+                                                <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 10px;">
+                                                    <tr>
+                                                        <td style="background-color: ${content.buttonBackground}; border-radius: 4px;">
+                                                            <a href="${content.buttonLink}" target="_blank" style="font-size: ${content.buttonFontSize}; color: ${content.buttonColor}; padding: 10px 20px; display: block; text-decoration: none;">${content.buttonText}</a>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            ` : ''}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
                         `;
                         const imageColumn = `
-                            <table cellpadding="0" cellspacing="0" border="0" class="column" style="width: 100%; max-width: ${canvasWidth/2}px;" role="presentation">
-                                <tr>
-                                    <td style="${paddingStyle}">
-                                        <img src="${content.image}" alt="Image" style="display: block; width: 100%; max-width: ${canvasWidth/2}px; height: auto;">
-                                    </td>
-                                </tr>
-                            </table>
+                            <td class="column" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
+                                <table cellpadding="0" cellspacing="0" border="0" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top;" role="presentation">
+                                    <tr>
+                                        <td style="${paddingStyle}">
+                                            <img src="${content.image}" alt="Image" style="display: block; width: 100%; max-width: ${columnWidth}px; height: auto;">
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
                         `;
                         const leftColumn = content.direction === 'text-left' ? textColumn : imageColumn;
                         const rightColumn = content.direction === 'text-left' ? imageColumn : textColumn;
-                        return `
-                            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
+                        const msoHtml = `
+                            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" role="presentation">
                                 <tr>
-                                    <td style="padding: 0;">
-                                        <!--[if mso]>
-                                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                                            <tr>
-                                                <td style="width: ${canvasWidth/2}px;">
-                                        <![endif]-->
-                                        ${leftColumn}
-                                        <!--[if mso]>
-                                                </td>
-                                                <td style="width: ${canvasWidth/2}px;">
-                                        <![endif]-->
-                                        ${rightColumn}
-                                        <!--[if mso]>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        <![endif]-->
-                                    </td>
+                                    <td style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">${content.direction === 'text-left' ? textColumn : imageColumn}</td>
+                                    <td style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">${content.direction === 'text-left' ? imageColumn : textColumn}</td>
                                 </tr>
                             </table>
+                        `;
+                        return `
+                            <!--[if mso]>${msoHtml}<![endif]-->
+                            <!--[if !mso]><!-->
+                            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
+                                <tr>
+                                    ${leftColumn}
+                                    ${rightColumn}
+                                </tr>
+                            </table>
+                            <!--<![endif]-->
                         `;
                     case 'hero':
                         const buttonHtml = content.showOverlayButton ? `
@@ -1068,6 +1078,7 @@
                 doc.write(generateEmailHtml());
                 doc.close();
                 codeOutput.value = generateEmailHtml();
+                previewFrame.style.width = isMobileView ? '320px' : `${canvasWidth}px`;
 
                 const previewBody = previewFrame.contentWindow.document.body;
                 const sectionsInPreview = previewBody.querySelectorAll('table[role="presentation"]');
