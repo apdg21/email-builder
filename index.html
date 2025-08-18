@@ -22,9 +22,15 @@
             border-right: 1px solid #e5e7eb;
         }
 
+        .preview-container {
+            flex-grow: 1;
+            overflow: auto;
+        }
+
         .preview-iframe {
-            height: 100%;
             width: 100%;
+            min-height: 100vh;
+            height: auto;
             border: none;
             background-color: #ffffff;
         }
@@ -147,7 +153,7 @@
                     Switch to Mobile View
                 </button>
             </div>
-            <div class="flex justify-center">
+            <div class="preview-container flex justify-center">
                 <iframe id="preview-frame" class="preview-iframe rounded-lg shadow-lg"></iframe>
             </div>
         </div>
@@ -262,7 +268,7 @@
                             fontSize: '16px',
                             textColor: '#333333',
                             textAlign: 'left',
-                            direction: 'text-left',
+                            direction: 'text-right', // Default to image left, text right
                             showButton: false,
                             buttonText: 'Click Me',
                             buttonLink: '#',
@@ -648,7 +654,7 @@
                             {value: 'center', label: 'Center'},
                             {value: 'right', label: 'Right'}
                         ]);
-                        createInput('Direction', 'direction', 'select', 'text-left', [
+                        createInput('Direction', 'direction', 'select', 'text-right', [
                             {value: 'text-left', label: 'Text Left, Image Right'},
                             {value: 'text-right', label: 'Image Left, Text Right'}
                         ]);
@@ -774,7 +780,7 @@
                         const columnWidth = Math.floor((canvasWidth - 20) / 2); // Account for 10px padding per side
                         const textColumn = `
                             <td class="column" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
-                                <table cellpadding="0" cellspacing="0" border="0" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top;" role="presentation">
+                                <table cellpadding="0" cellspacing="0" border="0" width="${columnWidth}" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top; display: inline-table;" role="presentation">
                                     <tr>
                                         <td style="${paddingStyle} text-align: ${content.textAlign};">
                                             <p style="font-size: ${content.fontSize}; color: ${content.textColor}; margin: 0; line-height: 1.5;">${content.text}</p>
@@ -794,7 +800,7 @@
                         `;
                         const imageColumn = `
                             <td class="column" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
-                                <table cellpadding="0" cellspacing="0" border="0" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top;" role="presentation">
+                                <table cellpadding="0" cellspacing="0" border="0" width="${columnWidth}" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top; display: inline-table;" role="presentation">
                                     <tr>
                                         <td style="${paddingStyle}">
                                             <img src="${content.image}" alt="Image" style="display: block; width: 100%; max-width: ${columnWidth}px; height: auto;">
@@ -808,21 +814,27 @@
                         const msoHtml = `
                             <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" role="presentation">
                                 <tr>
-                                    <td style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">${content.direction === 'text-left' ? textColumn : imageColumn}</td>
-                                    <td style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">${content.direction === 'text-left' ? imageColumn : textColumn}</td>
+                                    <td style="width: ${columnWidth}px; vertical-align: top;">${content.direction === 'text-left' ? textColumn : imageColumn}</td>
+                                    <td style="width: ${columnWidth}px; vertical-align: top;">${content.direction === 'text-left' ? imageColumn : textColumn}</td>
                                 </tr>
                             </table>
                         `;
                         return `
-                            <!--[if mso]>${msoHtml}<![endif]-->
-                            <!--[if !mso]><!-->
                             <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
                                 <tr>
-                                    ${leftColumn}
-                                    ${rightColumn}
+                                    <td style="padding: 0;">
+                                        <!--[if mso]>${msoHtml}<![endif]-->
+                                        <!--[if !mso]><!-->
+                                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; max-width: ${canvasWidth}px;">
+                                            <tr>
+                                                ${leftColumn}
+                                                ${rightColumn}
+                                            </tr>
+                                        </table>
+                                        <!--<![endif]-->
+                                    </td>
                                 </tr>
                             </table>
-                            <!--<![endif]-->
                         `;
                     case 'hero':
                         const buttonHtml = content.showOverlayButton ? `
@@ -951,7 +963,7 @@
                         .join('');
                     columnsHtml += `
                         <td class="column" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
-                            <table cellpadding="0" cellspacing="0" border="0" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top;" role="presentation">
+                            <table cellpadding="0" cellspacing="0" border="0" width="${columnWidth}" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top;" role="presentation">
                                 <tr>
                                     <td style="padding: 10px;">
                                         ${blocksHtml}
@@ -1079,6 +1091,11 @@
                 doc.close();
                 codeOutput.value = generateEmailHtml();
                 previewFrame.style.width = isMobileView ? '320px' : `${canvasWidth}px`;
+                // Dynamically adjust iframe height based on content
+                setTimeout(() => {
+                    const contentHeight = previewFrame.contentWindow.document.body.scrollHeight;
+                    previewFrame.style.height = `${Math.max(contentHeight, window.innerHeight)}px`;
+                }, 100);
 
                 const previewBody = previewFrame.contentWindow.document.body;
                 const sectionsInPreview = previewBody.querySelectorAll('table[role="presentation"]');
