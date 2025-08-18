@@ -778,57 +778,58 @@
                         `;
                     case 'text-image':
                         const columnWidth = Math.floor((canvasWidth - 20) / 2); // Account for 10px padding per side
-                        const textColumn = `
-                            <td class="column" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
-                                <table cellpadding="0" cellspacing="0" border="0" width="${columnWidth}" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top; display: inline-table;" role="presentation">
-                                    <tr>
-                                        <td style="${paddingStyle} text-align: ${content.textAlign};">
-                                            <p style="font-size: ${content.fontSize}; color: ${content.textColor}; margin: 0; line-height: 1.5;">${content.text}</p>
-                                            ${content.showButton ? `
-                                                <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 10px;">
-                                                    <tr>
-                                                        <td style="background-color: ${content.buttonBackground}; border-radius: 4px;">
-                                                            <a href="${content.buttonLink}" target="_blank" style="font-size: ${content.buttonFontSize}; color: ${content.buttonColor}; padding: 10px 20px; display: block; text-decoration: none;">${content.buttonText}</a>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            ` : ''}
-                                        </td>
-                                    </tr>
-                                </table>
+                        const textContent = `
+                            <div style="font-size: ${content.fontSize}; color: ${content.textColor}; text-align: ${content.textAlign}; line-height: 1.5; margin: 0;">
+                                ${content.text}
+                                ${content.showButton ? `
+                                    <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 10px;">
+                                        <tr>
+                                            <td style="background-color: ${content.buttonBackground}; border-radius: 4px;">
+                                                <a href="${content.buttonLink}" target="_blank" style="font-size: ${content.buttonFontSize}; color: ${content.buttonColor}; padding: 10px 20px; display: inline-block; text-decoration: none;">${content.buttonText}</a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                ` : ''}
+                            </div>
+                        `;
+                        const imageContent = `
+                            <img src="${content.image}" alt="Image" style="display: block; width: 100%; max-width: ${columnWidth}px; height: auto;" />
+                        `;
+                        const leftContent = content.direction === 'text-left' ? textContent : imageContent;
+                        const rightContent = content.direction === 'text-left' ? imageContent : textContent;
+                        const msoTextContent = `
+                            <td style="width: ${columnWidth}px; vertical-align: top; ${paddingStyle}">
+                                ${textContent}
                             </td>
                         `;
-                        const imageColumn = `
-                            <td class="column" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
-                                <table cellpadding="0" cellspacing="0" border="0" width="${columnWidth}" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top; display: inline-table;" role="presentation">
-                                    <tr>
-                                        <td style="${paddingStyle}">
-                                            <img src="${content.image}" alt="Image" style="display: block; width: 100%; max-width: ${columnWidth}px; height: auto;">
-                                        </td>
-                                    </tr>
-                                </table>
+                        const msoImageContent = `
+                            <td style="width: ${columnWidth}px; vertical-align: top; ${paddingStyle}">
+                                ${imageContent}
                             </td>
                         `;
-                        const leftColumn = content.direction === 'text-left' ? textColumn : imageColumn;
-                        const rightColumn = content.direction === 'text-left' ? imageColumn : textColumn;
-                        const msoHtml = `
-                            <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" role="presentation">
-                                <tr>
-                                    <td style="width: ${columnWidth}px; vertical-align: top;">${content.direction === 'text-left' ? textColumn : imageColumn}</td>
-                                    <td style="width: ${columnWidth}px; vertical-align: top;">${content.direction === 'text-left' ? imageColumn : textColumn}</td>
-                                </tr>
-                            </table>
-                        `;
+                        const msoLeftContent = content.direction === 'text-left' ? msoTextContent : msoImageContent;
+                        const msoRightContent = content.direction === 'text-left' ? msoImageContent : msoTextContent;
                         return `
                             <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
                                 <tr>
-                                    <td style="padding: 0;">
-                                        <!--[if mso]>${msoHtml}<![endif]-->
-                                        <!--[if !mso]><!-->
-                                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; max-width: ${canvasWidth}px;">
+                                    <td style="${paddingStyle}">
+                                        <!--[if mso]>
+                                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
                                             <tr>
-                                                ${leftColumn}
-                                                ${rightColumn}
+                                                ${msoLeftContent}
+                                                ${msoRightContent}
+                                            </tr>
+                                        </table>
+                                        <![endif]-->
+                                        <!--[if !mso]><!-->
+                                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; max-width: ${canvasWidth}px; border-collapse: collapse;">
+                                            <tr>
+                                                <td class="column" width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; display: table-cell; ${paddingStyle}">
+                                                    ${leftContent}
+                                                </td>
+                                                <td class="column" width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; display: table-cell; ${paddingStyle}">
+                                                    ${rightContent}
+                                                </td>
                                             </tr>
                                         </table>
                                         <!--<![endif]-->
@@ -950,7 +951,7 @@
                 }
                 const columnWidth = Math.floor((canvasWidth - (numColumns * 20)) / numColumns);
                 let columnsHtml = '';
-                let msoHtml = `<table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" role="presentation"><tr>`;
+                let msoColumnsHtml = '';
                 content.columns.forEach((col, index) => {
                     if (!col || !col.blocks || typeof col.blocks !== 'object') {
                         console.warn(`Invalid blocks in column ${index + 1}, using default blocks`);
@@ -962,29 +963,38 @@
                         .map(type => generateBlockHtml(col.blocks[type], type))
                         .join('');
                     columnsHtml += `
-                        <td class="column" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
-                            <table cellpadding="0" cellspacing="0" border="0" width="${columnWidth}" style="width: ${columnWidth}px; max-width: ${columnWidth}px; vertical-align: top;" role="presentation">
-                                <tr>
-                                    <td style="padding: 10px;">
-                                        ${blocksHtml}
-                                    </td>
-                                </tr>
-                            </table>
+                        <td class="column" width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; display: table-cell; padding: 0 10px;">
+                            ${blocksHtml}
                         </td>
                     `;
-                    msoHtml += `<td style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">${blocksHtml}</td>`;
+                    msoColumnsHtml += `
+                        <td width="${columnWidth}" style="width: ${columnWidth}px; vertical-align: top; padding: 0 10px;">
+                            ${blocksHtml}
+                        </td>
+                    `;
                 });
-                msoHtml += `</tr></table>`;
                 const tableStyle = `width: 100%; max-width: ${canvasWidth}px; min-width: 0; ${getBackgroundStyle(content)} border: ${content.borderWidth} ${content.borderStyle} ${content.borderColor}; border-radius: ${content.borderRadius}; margin-top: ${content.marginTop}; margin-bottom: ${content.marginBottom}; margin-left: ${content.marginLeft}; margin-right: ${content.marginRight};`;
                 return `
-                    <!--[if mso]>${msoHtml}<![endif]-->
-                    <!--[if !mso]><!-->
                     <table cellpadding="0" cellspacing="0" border="0" width="${canvasWidth}" align="center" style="${tableStyle}" role="presentation">
                         <tr>
-                            ${columnsHtml}
+                            <td style="padding: 0;">
+                                <!--[if mso]>
+                                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                    <tr>
+                                        ${msoColumnsHtml}
+                                    </tr>
+                                </table>
+                                <![endif]-->
+                                <!--[if !mso]><!-->
+                                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; max-width: ${canvasWidth}px; border-collapse: collapse;">
+                                    <tr>
+                                        ${columnsHtml}
+                                    </tr>
+                                </table>
+                                <!--<![endif]-->
+                            </td>
                         </tr>
                     </table>
-                    <!--<![endif]-->
                 `;
             } catch (error) {
                 console.error('Error generating multi-column HTML:', error);
@@ -1048,6 +1058,7 @@
         }
         .column {
             vertical-align: top;
+            display: table-cell;
         }
         @media only screen and (max-width: 600px) {
             .container {
@@ -1094,6 +1105,7 @@
                 // Dynamically adjust iframe height based on content
                 setTimeout(() => {
                     const contentHeight = previewFrame.contentWindow.document.body.scrollHeight;
+                    console.log('Content height:', contentHeight);
                     previewFrame.style.height = `${Math.max(contentHeight, window.innerHeight)}px`;
                 }, 100);
 
