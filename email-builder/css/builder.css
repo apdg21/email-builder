@@ -1,0 +1,496 @@
+/* ============================================================
+   BUILDER.CSS — Dark theme system for Email Builder
+   This file is loaded BEFORE the inline styles in email-builder.html
+   which override and extend these base rules.
+   ============================================================ */
+
+:root {
+    /* Keep legacy vars for section JS modules that may reference them */
+    --primary:        #5b7cfa;
+    --primary-dark:   #4a68e8;
+    --dark:           #e2e8f0;
+    --light:          #1a1d27;
+    --gray:           #94a3b8;
+    --success:        #10b981;
+
+    /* Builder dark palette */
+    --b-bg:           #0f1117;
+    --b-surface:      #1a1d27;
+    --b-surface2:     #222638;
+    --b-surface3:     #2a2f45;
+    --b-border:       #2e3348;
+    --b-border2:      #3d4460;
+    --b-accent:       #5b7cfa;
+    --b-purple:       #8b5cf6;
+    --b-green:        #10b981;
+    --b-red:          #ef4444;
+    --b-text:         #e2e8f0;
+    --b-text2:        #94a3b8;
+    --b-text3:        #64748b;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--b-bg);
+    color: var(--b-text);
+    line-height: 1.5;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ── SECTION / CONTAINER LIST ITEMS ── */
+.section-item, .container-item {
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-left: 3px solid transparent;
+    position: relative;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--b-surface2);
+    border: 1px solid var(--b-border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 3px;
+    color: var(--b-text);
+}
+
+.section-item:hover, .container-item:hover {
+    background: var(--b-surface3);
+    border-color: var(--b-border2);
+    border-left-color: var(--b-accent);
+}
+
+.section-item.active, .container-item.active {
+    background: rgba(91, 124, 250, 0.1);
+    border-left-color: var(--b-accent);
+    border-color: rgba(91, 124, 250, 0.3);
+}
+
+.container-item {
+    background: rgba(139, 92, 246, 0.07);
+    border-left-color: rgba(139, 92, 246, 0.4);
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.container-item:hover {
+    border-left-color: var(--b-purple);
+}
+
+.container-item.active {
+    background: rgba(139, 92, 246, 0.15);
+    border-left-color: var(--b-purple);
+    border-color: rgba(139, 92, 246, 0.35);
+}
+
+.container-nested {
+    margin-left: 14px;
+    border-left: 2px dashed rgba(100, 116, 139, 0.3);
+    padding-left: 8px;
+}
+
+/* ── DRAG HANDLE ── */
+.draggable-handle {
+    cursor: grab;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--b-text3);
+    font-size: 0.75rem;
+}
+
+.draggable-handle:active { cursor: grabbing; }
+
+.section-item:hover .draggable-handle,
+.container-item:hover .draggable-handle {
+    opacity: 1;
+    color: var(--b-text2);
+}
+
+/* ── DRAG STATES ── */
+.section-item.dragging, .container-item.dragging {
+    opacity: 0.35;
+    background: rgba(91, 124, 250, 0.05);
+    border: 2px dashed var(--b-accent);
+}
+
+.drag-over-top {
+    border-top: 2px solid var(--b-accent) !important;
+    padding-top: 6px;
+}
+
+.drag-over-bottom {
+    border-bottom: 2px solid var(--b-accent) !important;
+    padding-bottom: 6px;
+}
+
+.drag-over-inside {
+    background: rgba(91, 124, 250, 0.15) !important;
+    border: 2px solid var(--b-accent) !important;
+}
+
+/* ── DRAG FEEDBACK LABEL ── */
+.drag-feedback {
+    position: fixed;
+    background: var(--b-accent);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: 0 4px 20px rgba(91, 124, 250, 0.4);
+    display: none;
+    max-width: 280px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.02em;
+}
+
+/* ── PREVIEW FRAME ── */
+#preview-frame {
+    width: 100%;
+    min-height: 500px;
+    border: none;
+    background: #ffffff;
+    display: block;
+    border-radius: 10px;
+}
+
+/* ── PROPERTY FORM ELEMENTS ── */
+.property-group {
+    border: 1px solid var(--b-border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    background: var(--b-surface2);
+}
+
+.property-group summary {
+    padding: 9px 12px;
+    background: var(--b-surface3);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.78rem;
+    border-bottom: 1px solid var(--b-border);
+    color: var(--b-text2);
+}
+
+.property-group .content {
+    padding: 10px 12px;
+}
+
+.property-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--b-text3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 5px;
+}
+
+.property-input {
+    width: 100%;
+    padding: 7px 10px;
+    background: var(--b-surface2);
+    border: 1px solid var(--b-border);
+    border-radius: 6px;
+    color: var(--b-text);
+    font-size: 0.82rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+}
+
+.property-input:focus {
+    border-color: var(--b-accent);
+    box-shadow: 0 0 0 3px rgba(91, 124, 250, 0.18);
+}
+
+.property-select {
+    width: 100%;
+    padding: 7px 10px;
+    background: var(--b-surface2);
+    border: 1px solid var(--b-border);
+    border-radius: 6px;
+    color: var(--b-text);
+    font-size: 0.82rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.property-select:focus {
+    border-color: var(--b-accent);
+    box-shadow: 0 0 0 3px rgba(91, 124, 250, 0.18);
+}
+
+.property-select option { background: var(--b-surface2); color: var(--b-text); }
+
+.property-checkbox {
+    accent-color: var(--b-accent);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    margin-right: 6px;
+}
+
+/* ── COLOR INPUT ── */
+input[type="color"].property-input {
+    padding: 2px 4px;
+    height: 36px;
+    cursor: pointer;
+    background: var(--b-surface3);
+}
+
+/* ── TEXTAREA ── */
+textarea.property-input {
+    min-height: 80px;
+    resize: vertical;
+    font-family: 'Fira Code', 'Courier New', monospace;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+/* ── COLOR PREVIEW CHIP ── */
+.color-preview {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-right: 6px;
+    vertical-align: middle;
+    border: 1px solid var(--b-border);
+}
+
+/* ── BADGES ── */
+.badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-left: 6px;
+}
+
+.badge-blue {
+    background: rgba(91, 124, 250, 0.2);
+    color: #93c5fd;
+}
+
+.badge-purple {
+    background: rgba(139, 92, 246, 0.2);
+    color: #c4b5fd;
+}
+
+/* ── BLOCK ITEMS ── */
+.block-item {
+    background: var(--b-surface2);
+    border: 1px solid var(--b-border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    transition: all 0.15s;
+}
+
+.block-item:hover {
+    border-color: var(--b-accent);
+    box-shadow: 0 2px 8px rgba(91, 124, 250, 0.1);
+}
+
+.block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: move;
+}
+
+.block-controls button {
+    padding: 3px 8px;
+    margin-left: 4px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    background: var(--b-surface3);
+    border: 1px solid var(--b-border);
+    color: var(--b-text2);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.block-controls button:hover {
+    background: var(--b-border);
+    color: var(--b-text);
+}
+
+.add-block-btn {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--b-green);
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    margin-bottom: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.add-block-btn:hover {
+    background: rgba(16, 185, 129, 0.25);
+}
+
+/* ── COLUMN WIDTH SLIDER ── */
+.column-width-slider {
+    width: 100%;
+    margin: 6px 0;
+    accent-color: var(--b-accent);
+}
+
+.column-width-value {
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-top: 4px;
+    color: var(--b-text2);
+}
+
+/* ── NAV ITEMS ── */
+.nav-item {
+    padding: 6px 10px;
+    background: var(--b-surface3);
+    border-radius: 4px;
+    margin: 0 4px;
+    color: var(--b-text);
+    font-size: 0.82rem;
+}
+
+/* ── CONTAINER HIGHLIGHT LABEL ── */
+.container-highlight {
+    border: 2px dashed var(--b-border2);
+    margin: 4px 0;
+    padding: 4px;
+    position: relative;
+}
+
+.container-highlight::before {
+    content: 'Container';
+    position: absolute;
+    top: -10px;
+    left: 8px;
+    background: rgba(139, 92, 246, 0.5);
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    z-index: 10;
+    letter-spacing: 0.05em;
+}
+
+/* ── BLOCK ORDER SELECT ── */
+.block-order-select {
+    height: 90px;
+    background: var(--b-surface2);
+    border: 1px solid var(--b-border);
+    border-radius: 4px;
+    color: var(--b-text);
+    font-size: 0.8rem;
+}
+
+.block-order-select option { padding: 4px; }
+
+/* ── TEMPLATE ACTION BTN ── */
+.template-action-btn {
+    transition: all 0.15s;
+}
+
+.template-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ── SAVED TEMPLATES LIST ITEMS ── */
+#saved-templates-list > div {
+    transition: background 0.15s;
+    border-radius: 5px;
+    padding: 7px 10px;
+    cursor: pointer;
+}
+
+#saved-templates-list > div:hover {
+    background: #2a2f45;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+    .section-item, .container-item {
+        flex-direction: row;
+    }
+
+    .property-input, .property-select {
+        font-size: 0.9rem;
+    }
+}
+
+/* ── DETAILS ELEMENT DEFAULTS ── */
+details {
+    background: var(--b-surface2);
+    border: 1px solid var(--b-border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+details summary {
+    padding: 9px 12px;
+    background: var(--b-surface3);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.78rem;
+    border-bottom: 1px solid var(--b-border);
+    color: var(--b-text2);
+    list-style: none;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+details summary::-webkit-details-marker { display: none; }
+
+details summary::before {
+    content: '›';
+    font-size: 1rem;
+    line-height: 1;
+    transition: transform 0.2s;
+    color: var(--b-text3);
+    display: inline-block;
+}
+
+details[open] summary::before { transform: rotate(90deg); }
+
+details .p-2, details .content {
+    padding: 10px 12px !important;
+}
+
+details .mb-3 { margin-bottom: 10px !important; }
+
+/* ── MISC UTILITIES ── */
+.message-box {
+    transition: opacity 0.3s;
+}
+
+.nav-link { font-weight: 500 !important; }
